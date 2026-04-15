@@ -1,15 +1,26 @@
         </main>
         
-        <!-- Footer -->
-        <footer class="bg-white border-t border-slate-200 mt-auto">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                <div class="flex flex-col sm:flex-row justify-between items-center gap-2">
-                    <p class="text-sm text-slate-500">
-                        &copy; <?php echo date('Y'); ?> Credit Risk Simulator. Tous droits réservés.
-                    </p>
-                    <p class="text-sm text-slate-400">
-                        Version 1.0.0
-                    </p>
+        <!-- Footer — Style Amen Bank -->
+        <footer class="bg-[#003366] border-t border-[#002244] mt-auto">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <div class="flex items-center gap-3">
+                        <img src="https://www.amenbank.com.tn/wp-content/themes/amenbank/images/logo.png" 
+                             alt="Amen Bank" 
+                             class="h-6 brightness-0 invert opacity-60"
+                             onerror="this.style.display='none'">
+                        <p class="text-sm text-white/60">
+                            &copy; <?php echo date('Y'); ?> Amen Bank &middot; Tous droits réservés
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="text-xs text-white/40">Credit Risk Simulator v2.0</span>
+                        <span class="text-xs text-white/30">|</span>
+                        <span class="text-xs text-white/40 flex items-center gap-1">
+                            <i data-feather="shield" class="w-3 h-3"></i>
+                            Connexion sécurisée SSL
+                        </span>
+                    </div>
                 </div>
             </div>
         </footer>

@@ -75,7 +75,7 @@ const FormValidator = {
     rules: {
         required: (value) => value.trim() !== '' || 'Ce champ est requis',
         email: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) || 'Email invalide',
-        cin: (value) => /^[A-Za-z]{1,2}[0-9]{5,6}$/.test(value) || 'CIN invalide (ex: AB123456)',
+        cin: (value) => /^[0-9]{8}$/.test(value) || 'CIN invalide (8 chiffres)',
         phone: (value) => !value || /^[0-9+\s-]{10,}$/.test(value) || 'Numéro de téléphone invalide',
         minLength: (length) => (value) => value.length >= length || `Minimum ${length} caractères`,
         maxLength: (length) => (value) => value.length <= length || `Maximum ${length} caractères`,
@@ -196,18 +196,18 @@ const Modal = {
     }
 };
 
-// Format currency
-function formatCurrency(amount, currency = 'MAD') {
-    return new Intl.NumberFormat('fr-MA', {
+// Format currency — Dinar Tunisien
+function formatCurrency(amount, currency = 'DT') {
+    return new Intl.NumberFormat('fr-TN', {
         style: 'decimal',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+        minimumFractionDigits: 3,
+        maximumFractionDigits: 3
     }).format(amount) + ' ' + currency;
 }
 
 // Format percentage
 function formatPercentage(value, decimals = 2) {
-    return new Intl.NumberFormat('fr-MA', {
+    return new Intl.NumberFormat('fr-TN', {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals
     }).format(value) + '%';

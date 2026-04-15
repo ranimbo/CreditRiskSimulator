@@ -1,10 +1,19 @@
 /**
- * Credit Risk Simulator - Custom Styles
+ * Credit Risk Simulator — Amen Bank UI/UX
  * 
- * Additional styles that complement Tailwind CSS
+ * Palette inspirée de l'identité visuelle d'Amen Bank :
+ *   Navy principal : #003366
+ *   Gold accent    : #C8971F
+ *   Vert Amen      : #00a651
+ *   Fond clair     : #F4F6F9
+ *   Texte          : #333333
+ *   Texte muet     : #6B7280
+ *   Bordure        : #E2E8F0
  */
 
-/* Base styles */
+/* ========================================
+   BASE STYLES
+   ======================================== */
 * {
     box-sizing: border-box;
 }
@@ -13,22 +22,25 @@ html {
     scroll-behavior: smooth;
 }
 
-/* Focus styles for accessibility */
+/* Focus styles pour accessibilité — accent gold */
 :focus-visible {
-    outline: 2px solid #2563eb;
+    outline: 2px solid #C8971F;
     outline-offset: 2px;
 }
 
-/* Custom form styles */
+/* ========================================
+   FORM STYLES
+   ======================================== */
 input[type="text"],
 input[type="email"],
 input[type="password"],
 input[type="number"],
 input[type="date"],
 input[type="tel"],
+input[type="search"],
 select,
 textarea {
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 input[type="text"]:focus,
@@ -37,21 +49,22 @@ input[type="password"]:focus,
 input[type="number"]:focus,
 input[type="date"]:focus,
 input[type="tel"]:focus,
+input[type="search"]:focus,
 select:focus,
 textarea:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: #C8971F;
+    box-shadow: 0 0 0 3px rgba(200, 151, 31, 0.15);
 }
 
-/* Form input base classes (use with Tailwind) */
 .form-input {
     width: 100%;
     padding: 0.625rem 0.875rem;
     font-size: 0.875rem;
     line-height: 1.25rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.5rem;
+    border: 1px solid #E2E8F0;
+    border-radius: 4px;
     background-color: #fff;
+    color: #333333;
 }
 
 .form-input:disabled {
@@ -67,25 +80,71 @@ textarea:focus {
     margin-bottom: 0.375rem;
 }
 
+/* Astérisque gold pour champs requis */
+.form-label .text-red-500,
+.form-label .required-star {
+    color: #C8971F !important;
+}
+
 .form-error {
     font-size: 0.75rem;
-    color: #dc2626;
+    color: #C0392B;
     margin-top: 0.25rem;
 }
 
-/* Button styles */
+/* Input avec icône */
+.input-icon-wrapper {
+    position: relative;
+}
+
+.input-icon-wrapper .input-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6B7280;
+    width: 18px;
+    height: 18px;
+    pointer-events: none;
+}
+
+.input-icon-wrapper .form-input {
+    padding-left: 40px;
+}
+
+.input-icon-wrapper .input-icon-right {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6B7280;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 4px;
+}
+
+.input-icon-wrapper .input-icon-right:hover {
+    color: #003366;
+}
+
+/* ========================================
+   BUTTON STYLES
+   ======================================== */
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    padding: 0.625rem 1rem;
+    padding: 0.625rem 1.25rem;
     font-size: 0.875rem;
     font-weight: 500;
     line-height: 1.25rem;
-    border-radius: 0.5rem;
+    border-radius: 4px;
     cursor: pointer;
-    transition: all 0.15s ease-in-out;
+    transition: all 0.2s ease;
+    border: none;
+    text-decoration: none;
 }
 
 .btn:disabled {
@@ -93,60 +152,78 @@ textarea:focus {
     cursor: not-allowed;
 }
 
+/* Bouton primaire — Navy */
 .btn-primary {
-    background-color: #2563eb;
+    background-color: #003366;
     color: #fff;
-    border: 1px solid #2563eb;
+    border: 1px solid #003366;
 }
 
 .btn-primary:hover:not(:disabled) {
-    background-color: #1d4ed8;
-    border-color: #1d4ed8;
+    background-color: #004080;
+    border-color: #004080;
 }
 
+/* Bouton secondaire — Outlined */
 .btn-secondary {
     background-color: #fff;
-    color: #374151;
-    border: 1px solid #d1d5db;
+    color: #003366;
+    border: 1px solid #003366;
 }
 
 .btn-secondary:hover:not(:disabled) {
-    background-color: #f9fafb;
+    background-color: #F4F6F9;
 }
 
-.btn-danger {
-    background-color: #dc2626;
+/* Bouton Gold CTA */
+.btn-gold {
+    background-color: #C8971F;
     color: #fff;
-    border: 1px solid #dc2626;
+    border: 1px solid #C8971F;
+}
+
+.btn-gold:hover:not(:disabled) {
+    background-color: #A07820;
+    border-color: #A07820;
+}
+
+/* Bouton danger */
+.btn-danger {
+    background-color: #C0392B;
+    color: #fff;
+    border: 1px solid #C0392B;
 }
 
 .btn-danger:hover:not(:disabled) {
-    background-color: #b91c1c;
-    border-color: #b91c1c;
+    background-color: #a5281c;
+    border-color: #a5281c;
 }
 
+/* Bouton succès */
 .btn-success {
-    background-color: #16a34a;
+    background-color: #00a651;
     color: #fff;
-    border: 1px solid #16a34a;
+    border: 1px solid #00a651;
 }
 
 .btn-success:hover:not(:disabled) {
-    background-color: #15803d;
-    border-color: #15803d;
+    background-color: #008c44;
+    border-color: #008c44;
 }
 
-/* Card styles */
+/* ========================================
+   CARD STYLES
+   ======================================== */
 .card {
     background-color: #fff;
-    border-radius: 0.75rem;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .card-header {
     padding: 1rem 1.5rem;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid #E2E8F0;
 }
 
 .card-body {
@@ -155,12 +232,62 @@ textarea:focus {
 
 .card-footer {
     padding: 1rem 1.5rem;
-    border-top: 1px solid #e2e8f0;
-    background-color: #f8fafc;
-    border-radius: 0 0 0.75rem 0.75rem;
+    border-top: 1px solid #E2E8F0;
+    background-color: #F8FAFC;
+    border-radius: 0 0 8px 8px;
 }
 
-/* Table styles */
+/* KPI card avec bordure latérale */
+.kpi-card {
+    background: #fff;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    position: relative;
+    overflow: hidden;
+}
+
+.kpi-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+}
+
+.kpi-card.accent-navy::before { background-color: #003366; }
+.kpi-card.accent-green::before { background-color: #00a651; }
+.kpi-card.accent-red::before { background-color: #C0392B; }
+.kpi-card.accent-gold::before { background-color: #C8971F; }
+
+/* Section header style (formulaires) */
+.section-header {
+    background-color: #F4F6F9;
+    padding: 0.875rem 1.5rem;
+    border-bottom: 1px solid #E2E8F0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.section-header h2,
+.section-header h3 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #003366;
+    margin: 0;
+}
+
+.section-header .section-icon {
+    color: #C8971F;
+    width: 20px;
+    height: 20px;
+}
+
+/* ========================================
+   TABLE STYLES — Style Amen Bank
+   ======================================== */
 .table-container {
     overflow-x: auto;
 }
@@ -173,31 +300,102 @@ table {
 table th {
     text-align: left;
     padding: 0.75rem 1rem;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #64748b;
-    background-color: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
+    color: #fff;
+    background-color: #003366;
+    border-bottom: 1px solid #002244;
+    letter-spacing: 0.02em;
 }
 
 table td {
-    padding: 1rem;
-    font-size: 0.875rem;
-    color: #334155;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 0.75rem 1rem;
+    font-size: 0.8125rem;
+    color: #333333;
+    border-bottom: 1px solid #E2E8F0;
 }
 
 table tr:hover {
-    background-color: #f8fafc;
+    background-color: #F8FAFC;
 }
 
 table tr:last-child td {
     border-bottom: none;
 }
 
-/* Score meter */
+/* ========================================
+   DECISION BADGES — Style Amen Bank
+   ======================================== */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.badge-accorde {
+    background-color: #E6F4EA;
+    color: #1A7F3C;
+}
+
+.badge-refuse {
+    background-color: #FDEEEE;
+    color: #C0392B;
+}
+
+.badge-analyser {
+    background-color: #FEF9E7;
+    color: #B7950B;
+}
+
+.badge-attente {
+    background-color: #EBF5FF;
+    color: #003366;
+}
+
+/* ========================================
+   BREADCRUMB
+   ======================================== */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: #6B7280;
+    margin-bottom: 1rem;
+}
+
+.breadcrumb a {
+    color: #003366;
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+.breadcrumb a:hover {
+    color: #C8971F;
+}
+
+.breadcrumb .separator {
+    color: #D1D5DB;
+}
+
+.breadcrumb .current {
+    color: #333333;
+    font-weight: 500;
+}
+
+/* Page title avec bordure accent */
+.page-title-accent {
+    border-left: 4px solid #003366;
+    padding-left: 1rem;
+}
+
+/* ========================================
+   SCORE GAUGE
+   ======================================== */
 .score-meter {
     position: relative;
     width: 100%;
@@ -210,19 +408,19 @@ table tr:last-child td {
 .score-meter-fill {
     height: 100%;
     border-radius: 9999px;
-    transition: width 0.5s ease-out;
+    transition: width 0.6s ease-out;
 }
 
 .score-meter-fill.excellent {
-    background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+    background: linear-gradient(90deg, #00a651 0%, #008c44 100%);
 }
 
 .score-meter-fill.good {
-    background: linear-gradient(90deg, #eab308 0%, #ca8a04 100%);
+    background: linear-gradient(90deg, #C8971F 0%, #A07820 100%);
 }
 
 .score-meter-fill.poor {
-    background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+    background: linear-gradient(90deg, #C0392B 0%, #a5281c 100%);
 }
 
 /* Score circle */
@@ -246,7 +444,7 @@ table tr:last-child td {
     fill: none;
     stroke-width: 12;
     stroke-linecap: round;
-    transition: stroke-dashoffset 0.5s ease-out;
+    transition: stroke-dashoffset 0.6s ease-out;
 }
 
 .score-circle-text {
@@ -257,48 +455,44 @@ table tr:last-child td {
     text-align: center;
 }
 
-/* Status dots */
-.status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 9999px;
-    display: inline-block;
+/* ========================================
+   ALERTS / TOASTS — Style Amen Bank
+   ======================================== */
+.alert {
+    padding: 1rem 1.25rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+    border-left: 4px solid;
 }
 
-.status-dot.success {
-    background-color: #22c55e;
+.alert-success {
+    background-color: #E6F4EA;
+    border-left-color: #1A7F3C;
+    color: #1A7F3C;
 }
 
-.status-dot.warning {
-    background-color: #eab308;
+.alert-error {
+    background-color: #FDEEEE;
+    border-left-color: #C0392B;
+    color: #C0392B;
 }
 
-.status-dot.danger {
-    background-color: #ef4444;
+.alert-warning {
+    background-color: #FEF9E7;
+    border-left-color: #B7950B;
+    color: #B7950B;
 }
 
-.status-dot.info {
-    background-color: #3b82f6;
+.alert-info {
+    background-color: #EBF5FF;
+    border-left-color: #003366;
+    color: #003366;
 }
 
-/* Loading spinner */
-.spinner {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 2px solid #e2e8f0;
-    border-top-color: #3b82f6;
-    border-radius: 50%;
-    animation: spin 0.75s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* Toast notifications */
+/* Toast container */
 .toast-container {
     position: fixed;
     top: 1rem;
@@ -311,48 +505,43 @@ table tr:last-child td {
 
 .toast {
     padding: 1rem 1.5rem;
-    border-radius: 0.5rem;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
     display: flex;
     align-items: center;
     gap: 0.75rem;
     min-width: 300px;
     animation: slideIn 0.3s ease-out;
+    border-left: 4px solid;
 }
 
 .toast.success {
-    background-color: #dcfce7;
-    border: 1px solid #bbf7d0;
-    color: #166534;
+    background-color: #E6F4EA;
+    border-left-color: #1A7F3C;
+    color: #1A7F3C;
 }
 
 .toast.error {
-    background-color: #fee2e2;
-    border: 1px solid #fecaca;
-    color: #991b1b;
+    background-color: #FDEEEE;
+    border-left-color: #C0392B;
+    color: #C0392B;
 }
 
 .toast.warning {
-    background-color: #fef9c3;
-    border: 1px solid #fef08a;
-    color: #854d0e;
+    background-color: #FEF9E7;
+    border-left-color: #B7950B;
+    color: #B7950B;
 }
 
 .toast.info {
-    background-color: #dbeafe;
-    border: 1px solid #bfdbfe;
-    color: #1e40af;
+    background-color: #EBF5FF;
+    border-left-color: #003366;
+    color: #003366;
 }
 
 @keyframes slideIn {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
+    from { transform: translateX(100%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
 }
 
 /* Flash message animation */
@@ -361,21 +550,34 @@ table tr:last-child td {
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Modal styles */
+/* ========================================
+   LOADING / SPINNER
+   ======================================== */
+.spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #E2E8F0;
+    border-top-color: #003366;
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ========================================
+   MODAL STYLES
+   ======================================== */
 .modal-backdrop {
     position: fixed;
     inset: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 51, 102, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -385,7 +587,7 @@ table tr:last-child td {
 
 .modal-content {
     background-color: #fff;
-    border-radius: 0.75rem;
+    border-radius: 8px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     max-width: 500px;
     width: 100%;
@@ -394,17 +596,13 @@ table tr:last-child td {
 }
 
 @keyframes scaleIn {
-    from {
-        transform: scale(0.95);
-        opacity: 0;
-    }
-    to {
-        transform: scale(1);
-        opacity: 1;
-    }
+    from { transform: scale(0.95); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
 }
 
-/* Pagination */
+/* ========================================
+   PAGINATION
+   ======================================== */
 .pagination {
     display: flex;
     align-items: center;
@@ -418,16 +616,18 @@ table tr:last-child td {
     align-items: center;
     justify-content: center;
     font-size: 0.875rem;
-    border-radius: 0.375rem;
-    transition: all 0.15s ease-in-out;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    color: #333333;
 }
 
 .pagination-item:hover:not(.active):not(:disabled) {
-    background-color: #f1f5f9;
+    background-color: #F4F6F9;
+    color: #003366;
 }
 
 .pagination-item.active {
-    background-color: #2563eb;
+    background-color: #003366;
     color: #fff;
 }
 
@@ -436,7 +636,9 @@ table tr:last-child td {
     cursor: not-allowed;
 }
 
-/* Empty state */
+/* ========================================
+   EMPTY STATE
+   ======================================== */
 .empty-state {
     text-align: center;
     padding: 3rem 1rem;
@@ -452,16 +654,209 @@ table tr:last-child td {
 .empty-state-title {
     font-size: 1.125rem;
     font-weight: 600;
-    color: #334155;
+    color: #003366;
     margin-bottom: 0.5rem;
 }
 
 .empty-state-description {
-    color: #64748b;
+    color: #6B7280;
     margin-bottom: 1.5rem;
 }
 
-/* Responsive utilities */
+/* ========================================
+   NAVBAR — Style Amen Bank
+   ======================================== */
+.navbar-amen {
+    background-color: #003366;
+    box-shadow: 0 2px 8px rgba(0, 51, 102, 0.15);
+}
+
+.navbar-amen .nav-link {
+    color: rgba(255, 255, 255, 0.75);
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: color 0.2s;
+    position: relative;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.navbar-amen .nav-link:hover {
+    color: #fff;
+}
+
+.navbar-amen .nav-link.active {
+    color: #fff;
+}
+
+.navbar-amen .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background-color: #C8971F;
+    border-radius: 3px 3px 0 0;
+}
+
+/* ========================================
+   LOGIN PAGE
+   ======================================== */
+.login-left-panel {
+    background: linear-gradient(135deg, #003366 0%, #002244 60%, #001a33 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.login-left-panel::before {
+    content: '';
+    position: absolute;
+    bottom: -80px;
+    left: -80px;
+    width: 350px;
+    height: 350px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.login-left-panel::after {
+    content: '';
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: rgba(200, 151, 31, 0.08);
+}
+
+/* Wave decoration */
+.wave-decoration {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    opacity: 0.06;
+}
+
+/* Language selector */
+.lang-selector {
+    display: flex;
+    gap: 0.25rem;
+    font-size: 0.8125rem;
+}
+
+.lang-selector a,
+.lang-selector span {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    color: #6B7280;
+    text-decoration: none;
+    transition: all 0.15s;
+    cursor: pointer;
+}
+
+.lang-selector a:hover,
+.lang-selector span:hover {
+    color: #003366;
+    background-color: #F4F6F9;
+}
+
+.lang-selector .active {
+    color: #003366;
+    font-weight: 600;
+    background-color: #F4F6F9;
+}
+
+/* Security badges */
+.security-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.75rem;
+}
+
+/* ========================================
+   CHART CARDS
+   ======================================== */
+.chart-card {
+    background: #fff;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.chart-card .chart-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #003366;
+}
+
+.chart-card .chart-subtitle {
+    font-size: 0.75rem;
+    color: #6B7280;
+}
+
+/* ========================================
+   DECISION BANNER (page résultat)
+   ======================================== */
+.decision-banner {
+    padding: 1.5rem 2rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.decision-banner.accorde {
+    background-color: #E6F4EA;
+    border: 2px solid #1A7F3C;
+    color: #1A7F3C;
+}
+
+.decision-banner.refuse {
+    background-color: #FDEEEE;
+    border: 2px solid #C0392B;
+    color: #C0392B;
+}
+
+.decision-banner.analyser {
+    background-color: #FEF9E7;
+    border: 2px solid #B7950B;
+    color: #B7950B;
+}
+
+/* ========================================
+   STICKY ACTION BAR
+   ======================================== */
+.sticky-action-bar {
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    border-top: 1px solid #E2E8F0;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+    z-index: 10;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
 @media (max-width: 640px) {
     .card-body {
         padding: 1rem;
@@ -470,14 +865,19 @@ table tr:last-child td {
     table th,
     table td {
         padding: 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .section-header {
+        padding: 0.75rem 1rem;
     }
 }
 
-/* Print styles */
+/* ========================================
+   PRINT
+   ======================================== */
 @media print {
-    nav,
-    footer,
-    .no-print {
+    nav, footer, .no-print, .sticky-action-bar {
         display: none !important;
     }
     
@@ -489,21 +889,60 @@ table tr:last-child td {
     body {
         background-color: #fff !important;
     }
+
+    table th {
+        background-color: #f0f0f0 !important;
+        color: #000 !important;
+    }
 }
 
-/* Skeleton loading */
+/* ========================================
+   SKELETON LOADING
+   ======================================== */
 .skeleton {
     background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
-    border-radius: 0.25rem;
+    border-radius: 4px;
 }
 
 @keyframes shimmer {
-    0% {
-        background-position: 200% 0;
-    }
-    100% {
-        background-position: -200% 0;
-    }
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }
+
+/* ========================================
+   SCROLLBAR CUSTOM (optionnel)
+   ======================================== */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #F4F6F9;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #C8D1DA;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #003366;
+}
+
+/* ========================================
+   STATUS DOTS
+   ======================================== */
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    display: inline-block;
+}
+
+.status-dot.success { background-color: #00a651; }
+.status-dot.warning { background-color: #C8971F; }
+.status-dot.danger  { background-color: #C0392B; }
+.status-dot.info    { background-color: #003366; }

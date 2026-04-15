@@ -12,8 +12,8 @@
  * @param string $currency Currency symbol (default: MAD)
  * @return string Formatted amount
  */
-function formatCurrency(float|int $amount, string $currency = 'MAD'): string {
-    return number_format($amount, 2, ',', ' ') . ' ' . $currency;
+function formatCurrency(float|int $amount, string $currency = 'DT'): string {
+    return number_format($amount, 3, ',', ' ') . ' ' . $currency;
 }
 
 /**
@@ -152,14 +152,14 @@ function isValidEmail(string $email): bool {
 }
 
 /**
- * Validate CIN format (Moroccan national ID)
+ * Validate CIN format (Tunisian national ID)
  * 
  * @param string $cin CIN to validate
  * @return bool
  */
 function isValidCIN(string $cin): bool {
-    // Moroccan CIN: 1-2 letters followed by 5-6 digits
-    return preg_match('/^[A-Za-z]{1,2}[0-9]{5,6}$/', $cin) === 1;
+    // Tunisian CIN: 8 digits
+    return preg_match('/^[0-9]{8}$/', $cin) === 1;
 }
 
 /**

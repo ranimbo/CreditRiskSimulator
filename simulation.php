@@ -1,9 +1,9 @@
 <?php
 /**
- * Credit Simulation Page
+ * Simulation de Crédit — Style Amen Bank
  * 
- * Form for creating new credit simulations.
- * Adapté au nouveau schéma : type_credit, montant_demande, duree
+ * Formulaire avec sélecteur de client, paramètres de crédit,
+ * et aperçu en temps réel avec mensualité en gold.
  */
 
 $pageTitle = 'Nouvelle simulation';
@@ -17,24 +17,23 @@ require_once __DIR__ . '/classes/ScoringEngine.php';
 $clientModel = new Client();
 $creditRequestModel = new CreditRequest();
 
-// Check if client is pre-selected
+// Client pré-sélectionné
 $selectedClientId = isset($_GET['client_id']) ? (int)$_GET['client_id'] : null;
 $selectedClient = null;
 if ($selectedClientId) {
     $selectedClient = $clientModel->findById($selectedClientId);
 }
 
-// Get all clients for dropdown
+// Tous les clients pour le dropdown
 $clients = $clientModel->getAll([], 1000, 0);
 
 $errors = [];
 $formData = [];
 
-// Handle form submission
+// Traitement du formulaire
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrfToken();
     
-    // Collect form data
     $formData = [
         'client_id' => (int)($_POST['client_id'] ?? 0),
         'montant_demande' => (float)($_POST['montant_demande'] ?? 0),
@@ -59,18 +58,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors['duree'] = 'La durée maximum est de 360 mois (30 ans).';
     }
     
-    // Process if no errors
+    // Traiter si pas d'erreurs
     if (empty($errors)) {
         $client = $clientModel->findById($formData['client_id']);
         
         if (!$client) {
             $errors['client_id'] = 'Client non trouvé.';
         } else {
-            // Calculate score
             $scoringEngine = new ScoringEngine();
             $scoreResult = $scoringEngine->calculateScore($client, $formData);
             
-            // Create credit request
             $requestData = [
                 'client_id' => $formData['client_id'],
                 'agent_id' => getCurrentUserId(),
@@ -82,11 +79,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             try {
                 $requestId = $creditRequestModel->create($requestData, $scoreResult);
-                
-                // Redirect to result page
                 header('Location: result.php?id=' . $requestId);
                 exit;
-                
             } catch (Exception $e) {
                 $errors['general'] = 'Erreur lors de la création de la demande: ' . $e->getMessage();
             }
@@ -97,41 +91,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 require_once __DIR__ . '/includes/header.php';
 ?>
 
-<!-- Page Header -->
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+    <a href="dashboard.php">Accueil</a>
+    <span class="separator">›</span>
+    <a href="history.php">Simulations</a>
+    <span class="separator">›</span>
+    <span class="current">Nouvelle simulation</span>
+</div>
+
+<!-- En-tête -->
 <div class="mb-6">
     <div class="flex items-center gap-4 mb-2">
-        <a href="dashboard.php" class="text-slate-400 hover:text-slate-600 transition-colors">
+        <a href="dashboard.php" class="text-[#6B7280] hover:text-[#003366] transition-colors">
             <i data-feather="arrow-left" class="w-5 h-5"></i>
         </a>
-        <h1 class="text-2xl font-bold text-slate-900">Nouvelle simulation de crédit</h1>
+        <div class="page-title-accent">
+            <h1 class="text-2xl font-bold text-[#003366]">Nouvelle simulation de crédit</h1>
+        </div>
     </div>
-    <p class="text-slate-500 ml-9">Évaluez le risque crédit et obtenez une décision instantanée.</p>
+    <p class="text-[#6B7280] ml-9">Évaluez le risque crédit et obtenez une décision instantanée.</p>
 </div>
 
 <?php if (!empty($errors['general'])): ?>
-<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center gap-3">
+<div class="alert alert-error mb-6">
     <i data-feather="alert-circle" class="w-5 h-5 flex-shrink-0"></i>
     <span><?php echo htmlspecialchars($errors['general']); ?></span>
 </div>
 <?php endif; ?>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Simulation Form -->
+    <!-- Formulaire de simulation -->
     <div class="lg:col-span-2">
         <form method="POST" id="simulation-form" class="space-y-6">
             <?php echo csrfField(); ?>
             
-            <!-- Client Selection -->
-            <div class="bg-white rounded-xl border border-slate-200">
-                <div class="p-6 border-b border-slate-200">
-                    <h2 class="text-lg font-semibold text-slate-900">Sélection du client</h2>
+            <!-- Sélection du client -->
+            <div class="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
+                <div class="section-header">
+                    <i data-feather="user" class="section-icon"></i>
+                    <h2>Sélection du client</h2>
                 </div>
                 <div class="p-6">
-                    <label for="client_id" class="form-label">Client <span class="text-red-500">*</span></label>
+                    <label for="client_id" class="form-label">Client <span class="text-[#C8971F]">*</span></label>
                     <select 
                         id="client_id" 
                         name="client_id" 
-                        class="form-input <?php echo isset($errors['client_id']) ? 'border-red-500' : ''; ?>"
+                        class="form-input <?php echo isset($errors['client_id']) ? 'border-[#C0392B]' : ''; ?>"
                         required
                         onchange="loadClientInfo(this.value)"
                     >
@@ -143,7 +149,7 @@ require_once __DIR__ . '/includes/header.php';
                             data-charges="<?php echo $client['charges_mensuelles']; ?>"
                             data-situation="<?php echo htmlspecialchars($client['situation_pro']); ?>"
                             data-historique="<?php echo htmlspecialchars($client['historique_credit'] ? 'Bon historique' : 'Incidents'); ?>">
-                            <?php echo htmlspecialchars($client['cin'] . ' - ' . $client['nom']); ?>
+                            <?php echo htmlspecialchars($client['cin'] . ' — ' . $client['nom']); ?>
                         </option>
                         <?php endforeach; ?>
                     </select>
@@ -151,33 +157,34 @@ require_once __DIR__ . '/includes/header.php';
                     <p class="form-error"><?php echo $errors['client_id']; ?></p>
                     <?php endif; ?>
                     
-                    <p class="text-sm text-slate-500 mt-2">
-                        <a href="client-form.php" class="text-primary-600 hover:text-primary-700">
+                    <p class="text-sm text-[#6B7280] mt-2">
+                        <a href="client-form.php" class="text-[#C8971F] hover:text-[#A07820] font-medium transition-colors">
                             + Créer un nouveau client
                         </a>
                     </p>
                 </div>
             </div>
             
-            <!-- Credit Details -->
-            <div class="bg-white rounded-xl border border-slate-200">
-                <div class="p-6 border-b border-slate-200">
-                    <h2 class="text-lg font-semibold text-slate-900">Détails du crédit</h2>
+            <!-- Détails du crédit -->
+            <div class="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
+                <div class="section-header">
+                    <i data-feather="credit-card" class="section-icon"></i>
+                    <h2>Détails du crédit</h2>
                 </div>
                 <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Montant -->
                     <div>
-                        <label for="montant_demande" class="form-label">Montant demandé (MAD) <span class="text-red-500">*</span></label>
+                        <label for="montant_demande" class="form-label">Montant demandé (DT) <span class="text-[#C8971F]">*</span></label>
                         <input 
                             type="number" 
                             id="montant_demande" 
                             name="montant_demande" 
                             value="<?php echo $formData['montant_demande'] ?? ''; ?>"
-                            class="form-input <?php echo isset($errors['montant_demande']) ? 'border-red-500' : ''; ?>"
+                            class="form-input <?php echo isset($errors['montant_demande']) ? 'border-[#C0392B]' : ''; ?>"
                             min="1000"
                             max="10000000"
                             step="1000"
-                            placeholder="Ex: 100000"
+                            placeholder="Ex: 50000"
                             required
                             onkeyup="updateCalculations()"
                             onchange="updateCalculations()"
@@ -189,11 +196,11 @@ require_once __DIR__ . '/includes/header.php';
                     
                     <!-- Durée -->
                     <div>
-                        <label for="duree" class="form-label">Durée (mois) <span class="text-red-500">*</span></label>
+                        <label for="duree" class="form-label">Durée (mois) <span class="text-[#C8971F]">*</span></label>
                         <select 
                             id="duree" 
                             name="duree" 
-                            class="form-input <?php echo isset($errors['duree']) ? 'border-red-500' : ''; ?>"
+                            class="form-input <?php echo isset($errors['duree']) ? 'border-[#C0392B]' : ''; ?>"
                             required
                             onchange="updateCalculations()"
                         >
@@ -214,7 +221,7 @@ require_once __DIR__ . '/includes/header.php';
                     
                     <!-- Type Credit -->
                     <div class="md:col-span-2">
-                        <label for="type_credit" class="form-label">Type du crédit</label>
+                        <label for="type_credit" class="form-label">Type du crédit <span class="text-[#C8971F]">*</span></label>
                         <select 
                             id="type_credit" 
                             name="type_credit" 
@@ -230,96 +237,103 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
             </div>
             
-            <!-- Submit -->
+            <!-- Actions -->
             <div class="flex items-center justify-end gap-4">
                 <a href="dashboard.php" class="btn btn-secondary">Annuler</a>
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" class="btn btn-gold">
                     <i data-feather="play" class="w-4 h-4"></i>
-                    Lancer la simulation
+                    Lancer le scoring
                 </button>
             </div>
         </form>
     </div>
     
-    <!-- Side Panel -->
+    <!-- Panneau latéral -->
     <div class="space-y-6">
-        <!-- Client Info -->
-        <div class="bg-white rounded-xl border border-slate-200" id="client-info-panel" style="<?php echo $selectedClient ? '' : 'display: none;'; ?>">
-            <div class="p-6 border-b border-slate-200">
-                <h3 class="text-lg font-semibold text-slate-900">Informations client</h3>
+        <!-- Infos client -->
+        <div class="bg-white rounded-xl border border-[#E2E8F0] shadow-sm" id="client-info-panel" style="<?php echo $selectedClient ? '' : 'display: none;'; ?>">
+            <div class="section-header">
+                <i data-feather="info" class="section-icon"></i>
+                <h3 class="text-sm font-semibold text-[#003366]">Informations client</h3>
             </div>
-            <div class="p-6 space-y-4">
+            <div class="p-5 space-y-4">
                 <div>
-                    <p class="text-sm text-slate-500">Revenu mensuel</p>
-                    <p class="text-lg font-semibold text-slate-900" id="client-revenu">
+                    <p class="text-xs text-[#6B7280]">Revenu mensuel</p>
+                    <p class="text-lg font-semibold text-[#003366]" id="client-revenu">
                         <?php echo $selectedClient ? formatCurrency($selectedClient['revenu_mensuel_net']) : '-'; ?>
                     </p>
                 </div>
                 <div>
-                    <p class="text-sm text-slate-500">Charges actuelles</p>
-                    <p class="text-lg font-semibold text-slate-900" id="client-charges">
+                    <p class="text-xs text-[#6B7280]">Charges actuelles</p>
+                    <p class="text-lg font-semibold text-[#333333]" id="client-charges">
                         <?php echo $selectedClient ? formatCurrency($selectedClient['charges_mensuelles']) : '-'; ?>
                     </p>
                 </div>
                 <div>
-                    <p class="text-sm text-slate-500">Situation</p>
-                    <p class="text-lg font-semibold text-slate-900" id="client-situation">
+                    <p class="text-xs text-[#6B7280]">Situation</p>
+                    <p class="text-sm font-semibold text-[#333333]" id="client-situation">
                         <?php echo $selectedClient ? htmlspecialchars($selectedClient['situation_pro']) : '-'; ?>
                     </p>
                 </div>
                 <div>
-                    <p class="text-sm text-slate-500">Historique</p>
-                    <p class="text-lg font-semibold text-slate-900" id="client-historique">
+                    <p class="text-xs text-[#6B7280]">Historique</p>
+                    <p class="text-sm font-semibold text-[#333333]" id="client-historique">
                         <?php echo $selectedClient ? ($selectedClient['historique_credit'] ? 'Bon historique' : 'Incidents') : '-'; ?>
                     </p>
                 </div>
             </div>
         </div>
         
-        <!-- Calculation Preview -->
-        <div class="bg-white rounded-xl border border-slate-200" id="calc-preview-panel" style="display: none;">
-            <div class="p-6 border-b border-slate-200">
-                <h3 class="text-lg font-semibold text-slate-900">Aperçu</h3>
+        <!-- Récapitulatif de la simulation -->
+        <div class="bg-white rounded-xl border border-[#E2E8F0] shadow-sm" id="calc-preview-panel" style="display: none;">
+            <div class="p-5 border-b border-[#E2E8F0]">
+                <h3 class="text-sm font-semibold text-[#003366]">Récapitulatif de la simulation</h3>
             </div>
-            <div class="p-6 space-y-4">
-                <div>
-                    <p class="text-sm text-slate-500">Mensualité estimée (Taux standard 5%)</p>
-                    <p class="text-2xl font-bold text-primary-600" id="calc-mensualite">-</p>
+            <div class="p-5 space-y-5">
+                <div class="text-center p-4 bg-[#FDF8ED] rounded-xl border border-[#C8971F]/20">
+                    <p class="text-xs text-[#6B7280] mb-1">Mensualité estimée</p>
+                    <p class="text-2xl font-bold text-[#C8971F]" id="calc-mensualite">-</p>
+                    <p class="text-[10px] text-[#6B7280] mt-1">Taux standard 5%</p>
                 </div>
                 <div>
-                    <p class="text-sm text-slate-500">Nouveau taux d'endettement</p>
-                    <p class="text-lg font-semibold" id="calc-endettement">-</p>
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-xs text-[#6B7280]">Nouveau taux d'endettement</p>
+                        <p class="text-sm font-bold" id="calc-endettement">-</p>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-2.5">
+                        <div class="h-2.5 rounded-full transition-all duration-300" id="calc-endettement-bar" style="width: 0%"></div>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <!-- Scoring Criteria Info -->
-        <div class="bg-slate-50 rounded-xl border border-slate-200 p-6">
-            <h3 class="font-semibold text-slate-900 mb-4">Critères d'évaluation</h3>
-            <ul class="space-y-2 text-sm text-slate-600">
+        <!-- Critères d'évaluation -->
+        <div class="bg-[#F4F6F9] rounded-xl border border-[#E2E8F0] p-5">
+            <h3 class="font-semibold text-[#003366] mb-4 text-sm">Critères d'évaluation</h3>
+            <ul class="space-y-2.5 text-sm text-[#6B7280]">
                 <li class="flex items-center gap-2">
-                    <span class="w-2 h-2 bg-primary-500 rounded-full"></span>
-                    Revenu mensuel (25%)
+                    <span class="w-2 h-2 bg-[#003366] rounded-full"></span>
+                    Revenu mensuel (20 pts)
                 </li>
                 <li class="flex items-center gap-2">
-                    <span class="w-2 h-2 bg-primary-500 rounded-full"></span>
-                    Taux d'endettement (25%)
+                    <span class="w-2 h-2 bg-[#003366] rounded-full"></span>
+                    Taux d'endettement (20 pts)
                 </li>
                 <li class="flex items-center gap-2">
-                    <span class="w-2 h-2 bg-primary-500 rounded-full"></span>
-                    Situation professionnelle (15%)
+                    <span class="w-2 h-2 bg-[#C8971F] rounded-full"></span>
+                    Situation professionnelle (20 pts)
                 </li>
                 <li class="flex items-center gap-2">
-                    <span class="w-2 h-2 bg-primary-500 rounded-full"></span>
-                    Ancienneté emploi (10%)
+                    <span class="w-2 h-2 bg-[#C8971F] rounded-full"></span>
+                    Ancienneté emploi (15 pts)
                 </li>
                 <li class="flex items-center gap-2">
-                    <span class="w-2 h-2 bg-primary-500 rounded-full"></span>
-                    Historique crédit (15%)
+                    <span class="w-2 h-2 bg-[#6B7280] rounded-full"></span>
+                    Historique crédit (15 pts)
                 </li>
                 <li class="flex items-center gap-2">
-                    <span class="w-2 h-2 bg-primary-500 rounded-full"></span>
-                    Âge (10%)
+                    <span class="w-2 h-2 bg-[#6B7280] rounded-full"></span>
+                    Âge (10 pts)
                 </li>
             </ul>
         </div>
@@ -330,7 +344,6 @@ require_once __DIR__ . '/includes/header.php';
 let clientRevenu = <?php echo $selectedClient ? $selectedClient['revenu_mensuel_net'] : 0; ?>;
 let clientCharges = <?php echo $selectedClient ? $selectedClient['charges_mensuelles'] : 0; ?>;
 
-// Quick function instead of fetching full PHP one for UI preview
 function calculateMonthlyPaymentJS(principal, annualRate, months) {
     const r = (annualRate / 100) / 12;
     if (r === 0) return principal / months;
@@ -352,9 +365,8 @@ function loadClientInfo(clientId) {
     clientRevenu = parseFloat(option.dataset.revenu) || 0;
     clientCharges = parseFloat(option.dataset.charges) || 0;
     
-    // just dummy format
-    document.getElementById('client-revenu').textContent = clientRevenu.toFixed(2) + ' MAD';
-    document.getElementById('client-charges').textContent = clientCharges.toFixed(2) + ' MAD';
+    document.getElementById('client-revenu').textContent = clientRevenu.toFixed(3) + ' DT';
+    document.getElementById('client-charges').textContent = clientCharges.toFixed(3) + ' DT';
     document.getElementById('client-situation').textContent = option.dataset.situation || '-';
     document.getElementById('client-historique').textContent = option.dataset.historique || '-';
     
@@ -365,7 +377,7 @@ function loadClientInfo(clientId) {
 function updateCalculations() {
     const montant = parseFloat(document.getElementById('montant_demande').value) || 0;
     const duree = parseInt(document.getElementById('duree').value) || 0;
-    const taux = 5.00; // default standard matching PHP Engine
+    const taux = 5.00;
     const panel = document.getElementById('calc-preview-panel');
     
     if (montant <= 0 || duree <= 0) {
@@ -374,22 +386,26 @@ function updateCalculations() {
     }
     
     const mensualite = calculateMonthlyPaymentJS(montant, taux, duree);
+    document.getElementById('calc-mensualite').textContent = mensualite.toFixed(3) + ' DT';
     
-    document.getElementById('calc-mensualite').textContent = mensualite.toFixed(2) + ' MAD';
-    
-    // Calculate new debt ratio
+    // Calculer le taux d'endettement
     if (clientRevenu > 0) {
         const newCharges = clientCharges + mensualite;
         const newRatio = (newCharges / clientRevenu) * 100;
         const ratioEl = document.getElementById('calc-endettement');
+        const barEl = document.getElementById('calc-endettement-bar');
         ratioEl.textContent = newRatio.toFixed(1) + '%';
+        barEl.style.width = Math.min(100, newRatio) + '%';
         
         if (newRatio < 30) {
-            ratioEl.className = 'text-lg font-semibold text-green-600';
-        } else if (newRatio < 50) {
-            ratioEl.className = 'text-lg font-semibold text-yellow-600';
+            ratioEl.className = 'text-sm font-bold text-[#1A7F3C]';
+            barEl.style.backgroundColor = '#1A7F3C';
+        } else if (newRatio < 40) {
+            ratioEl.className = 'text-sm font-bold text-[#C8971F]';
+            barEl.style.backgroundColor = '#C8971F';
         } else {
-            ratioEl.className = 'text-lg font-semibold text-red-600';
+            ratioEl.className = 'text-sm font-bold text-[#C0392B]';
+            barEl.style.backgroundColor = '#C0392B';
         }
     } else {
         document.getElementById('calc-endettement').textContent = '-';
@@ -398,7 +414,6 @@ function updateCalculations() {
     panel.style.display = 'block';
 }
 
-// Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     const clientId = document.getElementById('client_id').value;
     if (clientId) {
