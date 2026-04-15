@@ -1,11 +1,4 @@
 -- ================================================
--- BASE DE DONNÉES : credit_risk_db
--- ================================================
-DROP DATABASE IF EXISTS credit_risk_db;
-CREATE DATABASE credit_risk_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE credit_risk_db;
-
--- ================================================
 -- TABLE UTILISATEUR (abstraite)
 -- ================================================
 CREATE TABLE utilisateur (

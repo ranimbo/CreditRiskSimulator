@@ -11,7 +11,7 @@ require_once __DIR__ . '/Database.php';
 class ScoringEngine {
     private Database $db;
     
-    // Scoring thresholds (can be loaded from settings)
+    // Scoring thresholds
     private int $approvalThreshold = 70;
     private int $reviewThreshold = 50;
     
@@ -22,22 +22,6 @@ class ScoringEngine {
     
     public function __construct() {
         $this->db = Database::getInstance();
-        $this->loadThresholds();
-    }
-    
-    /**
-     * Load thresholds from database settings
-     */
-    private function loadThresholds(): void {
-        $approval = $this->db->fetchOne("SELECT valeur FROM settings WHERE cle = 'seuil_approbation'");
-        if ($approval) {
-            $this->approvalThreshold = (int) $approval['valeur'];
-        }
-        
-        $review = $this->db->fetchOne("SELECT valeur FROM settings WHERE cle = 'seuil_revision'");
-        if ($review) {
-            $this->reviewThreshold = (int) $review['valeur'];
-        }
     }
     
     /**
@@ -55,37 +39,37 @@ class ScoringEngine {
         
         // Calculate monthly payment
         $monthlyPayment = calculateMonthlyPayment(
-            $creditRequest['montant'],
-            $creditRequest['taux_annuel'],
-            $creditRequest['duree_mois']
+            $creditRequest['montant_demande'],
+            5.00, // Default 5% as no taux in new schema
+            $creditRequest['duree']
         );
         
         // Calculate debt ratio including new credit
         $totalCharges = $client['charges_mensuelles'] + $monthlyPayment;
-        $debtRatio = ($client['revenu_mensuel'] > 0) 
-            ? ($totalCharges / $client['revenu_mensuel']) * 100 
+        $debtRatio = ($client['revenu_mensuel_net'] > 0) 
+            ? ($totalCharges / $client['revenu_mensuel_net']) * 100 
             : 100;
         
         // Calculate age
         $age = calculateAge($client['date_naissance']);
         
         // 1. Score Revenu Mensuel (25 points max)
-        $this->scores['revenu'] = $this->scoreRevenu($client['revenu_mensuel']);
+        $this->scores['score_revenu'] = $this->scoreRevenu($client['revenu_mensuel_net']);
         
         // 2. Score Taux d'Endettement (25 points max)
-        $this->scores['endettement'] = $this->scoreEndettement($debtRatio);
+        $this->scores['score_endettement'] = $this->scoreEndettement($debtRatio);
         
         // 3. Score Situation Professionnelle (15 points max)
-        $this->scores['situation_pro'] = $this->scoreSituationPro($client['situation_professionnelle']);
+        $this->scores['score_situation_pro'] = $this->scoreSituationPro($client['situation_pro']);
         
         // 4. Score Ancienneté Emploi (10 points max)
-        $this->scores['anciennete'] = $this->scoreAnciennete($client['anciennete_emploi']);
+        $this->scores['score_anciennete'] = $this->scoreAnciennete($client['anciennete_emploi']);
         
         // 5. Score Historique Crédit (15 points max)
-        $this->scores['historique'] = $this->scoreHistorique($client['historique_credit']);
+        $this->scores['score_historique'] = $this->scoreHistorique((bool)$client['historique_credit']);
         
         // 6. Score Âge (10 points max)
-        $this->scores['age'] = $this->scoreAge($age);
+        $this->scores['score_age'] = $this->scoreAge($age);
         
         // Calculate total score
         $totalScore = array_sum($this->scores);
@@ -94,20 +78,20 @@ class ScoringEngine {
         $decision = $this->determineDecision($totalScore);
         
         // Calculate repayment capacity
-        $repaymentCapacity = $client['revenu_mensuel'] - $client['charges_mensuelles'];
+        $repaymentCapacity = $client['revenu_mensuel_net'] - $client['charges_mensuelles'];
         
         return [
-            'score_revenu' => $this->scores['revenu'],
-            'score_endettement' => $this->scores['endettement'],
-            'score_situation_pro' => $this->scores['situation_pro'],
-            'score_anciennete' => $this->scores['anciennete'],
-            'score_historique' => $this->scores['historique'],
-            'score_age' => $this->scores['age'],
+            'score_revenu' => $this->scores['score_revenu'],
+            'score_endettement' => $this->scores['score_endettement'],
+            'score_situation_pro' => $this->scores['score_situation_pro'],
+            'score_anciennete' => $this->scores['score_anciennete'],
+            'score_historique' => $this->scores['score_historique'],
+            'score_age' => $this->scores['score_age'],
             'score_total' => $totalScore,
             'taux_endettement' => round($debtRatio, 2),
             'capacite_remboursement' => $repaymentCapacity,
             'mensualite' => round($monthlyPayment, 2),
-            'cout_total' => round($monthlyPayment * $creditRequest['duree_mois'], 2),
+            'cout_total' => round($monthlyPayment * $creditRequest['duree'], 2),
             'facteurs_favorables' => $this->favorableFactors,
             'facteurs_defavorables' => $this->unfavorableFactors,
             'decision' => $decision,
@@ -160,11 +144,9 @@ class ScoringEngine {
     private function scoreSituationPro(string $situation): int {
         $scores = [
             'CDI' => 15,
-            'Fonctionnaire' => 14,
-            'Independant' => 10,
-            'Retraite' => 8,
-            'CDD' => 6,
-            'Sans emploi' => 0,
+            'FONCTIONNAIRE' => 14,
+            'INDEPENDANT' => 10,
+            'SANS_EMPLOI' => 0,
         ];
         
         $score = $scores[$situation] ?? 0;
@@ -199,19 +181,13 @@ class ScoringEngine {
     /**
      * Score credit history (15 points max)
      */
-    private function scoreHistorique(string $historique): int {
-        switch ($historique) {
-            case 'Aucun incident':
-                $this->favorableFactors[] = "Aucun incident de paiement";
-                return 15;
-            case 'Un incident':
-                $this->unfavorableFactors[] = "Un incident de paiement dans l'historique";
-                return 8;
-            case 'Plusieurs incidents':
-                $this->unfavorableFactors[] = "Plusieurs incidents de paiement";
-                return 0;
-            default:
-                return 0;
+    private function scoreHistorique(bool $bonHistorique): int {
+        if ($bonHistorique) {
+            $this->favorableFactors[] = "Aucun incident de paiement";
+            return 15;
+        } else {
+            $this->unfavorableFactors[] = "Incidents de paiement présents";
+            return 0;
         }
     }
     
@@ -238,11 +214,11 @@ class ScoringEngine {
      */
     private function determineDecision(int $score): string {
         if ($score >= $this->approvalThreshold) {
-            return 'approuve';
+            return 'ACCORDE';
         } elseif ($score >= $this->reviewThreshold) {
-            return 'en_revision';
+            return 'A_ANALYSER';
         } else {
-            return 'refuse';
+            return 'REFUSE';
         }
     }
     
@@ -253,19 +229,19 @@ class ScoringEngine {
         $justifications = [];
         
         switch ($decision) {
-            case 'approuve':
+            case 'ACCORDE':
                 $justifications[] = "Score de $score/100 - Profil éligible au crédit.";
                 if (count($this->favorableFactors) > 0) {
                     $justifications[] = "Points forts: " . implode(', ', array_slice($this->favorableFactors, 0, 3));
                 }
                 break;
                 
-            case 'en_revision':
+            case 'A_ANALYSER':
                 $justifications[] = "Score de $score/100 - Profil nécessitant une analyse approfondie.";
                 $justifications[] = "La décision finale doit être prise par un superviseur après examen du dossier.";
                 break;
                 
-            case 'refuse':
+            case 'REFUSE':
                 $justifications[] = "Score de $score/100 - Profil à risque élevé.";
                 if (count($this->unfavorableFactors) > 0) {
                     $justifications[] = "Motifs principaux: " . implode(', ', array_slice($this->unfavorableFactors, 0, 3));
@@ -277,27 +253,13 @@ class ScoringEngine {
     }
     
     /**
-     * Get score criteria labels
-     */
-    public static function getCriteriaLabels(): array {
-        return [
-            'revenu' => ['label' => 'Revenu mensuel', 'max' => 25, 'weight' => '25%'],
-            'endettement' => ['label' => 'Taux d\'endettement', 'max' => 25, 'weight' => '25%'],
-            'situation_pro' => ['label' => 'Situation professionnelle', 'max' => 15, 'weight' => '15%'],
-            'anciennete' => ['label' => 'Ancienneté emploi', 'max' => 10, 'weight' => '10%'],
-            'historique' => ['label' => 'Historique crédit', 'max' => 15, 'weight' => '15%'],
-            'age' => ['label' => 'Âge', 'max' => 10, 'weight' => '10%'],
-        ];
-    }
-    
-    /**
      * Get decision label in French
      */
     public static function getDecisionLabel(string $decision): string {
         $labels = [
-            'approuve' => 'Approuvé',
-            'refuse' => 'Refusé',
-            'en_revision' => 'En révision manuelle',
+            'ACCORDE' => 'Approuvé',
+            'REFUSE' => 'Refusé',
+            'A_ANALYSER' => 'À Analyser',
             'en_attente' => 'En attente',
         ];
         return $labels[$decision] ?? $decision;
@@ -308,10 +270,24 @@ class ScoringEngine {
      */
     public static function getDecisionColorClass(string $decision): string {
         return match($decision) {
-            'approuve' => 'text-green-600 bg-green-100',
-            'refuse' => 'text-red-600 bg-red-100',
-            'en_revision' => 'text-yellow-600 bg-yellow-100',
+            'ACCORDE' => 'text-green-600 bg-green-100',
+            'REFUSE' => 'text-red-600 bg-red-100',
+            'A_ANALYSER' => 'text-yellow-600 bg-yellow-100',
             default => 'text-slate-600 bg-slate-100',
         };
+    }
+    
+    /**
+     * Get criteria metadata
+     */
+    public static function getCriteriaLabels(): array {
+        return [
+            'score_revenu' => ['label' => 'Revenu Mensuel', 'max' => 25],
+            'score_endettement' => ['label' => 'Taux d\'endettement', 'max' => 25],
+            'score_situation_pro' => ['label' => 'Situation professionnelle', 'max' => 15],
+            'score_anciennete' => ['label' => 'Ancienneté d\'emploi', 'max' => 10],
+            'score_historique' => ['label' => 'Historique crédit', 'max' => 15],
+            'score_age' => ['label' => 'Âge', 'max' => 10],
+        ];
     }
 }

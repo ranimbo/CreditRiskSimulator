@@ -4,13 +4,11 @@
  * Generates and outputs a PDF report for a credit simulation
  */
 
-require_once 'includes/auth.php';
-requireLogin();
+require_once __DIR__ . '/includes/auth.php';
+requireAuth();
 
-require_once 'classes/CreditRequest.php';
-require_once 'classes/Client.php';
-require_once 'classes/User.php';
-require_once 'classes/PDFReport.php';
+require_once __DIR__ . '/classes/CreditRequest.php';
+require_once __DIR__ . '/classes/PDFReport.php';
 
 // Get request ID
 $requestId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -20,33 +18,17 @@ if (!$requestId) {
 }
 
 // Get the credit request with full details
-$creditRequest = new CreditRequest();
-$request = $creditRequest->getRequestWithDetails($requestId);
+$creditRequestModel = new CreditRequest();
+$request = $creditRequestModel->findById($requestId);
 
 if (!$request) {
     die('Demande non trouvée.');
 }
 
-// Get client details
-$client = new Client();
-$clientData = $client->getById($request['client_id']);
-
-if (!$clientData) {
-    die('Client non trouvé.');
-}
-
-// Get user details (agent who created the simulation)
-$user = new User();
-$userData = $user->getById($request['user_id']);
-
-if (!$userData) {
-    die('Utilisateur non trouvé.');
-}
-
 // Parse score details
 $scoreDetails = [];
-if (!empty($request['score_details'])) {
-    $scoreDetails = json_decode($request['score_details'], true) ?: [];
+if (!empty($request['detail_par_critere'])) {
+    $scoreDetails = json_decode($request['detail_par_critere'], true) ?: [];
 }
 
 // Generate PDF
@@ -55,8 +37,8 @@ try {
     
     // Set document information
     $pdf->SetCreator('Credit Risk Simulator');
-    $pdf->SetAuthor($userData['first_name'] . ' ' . $userData['last_name']);
-    $pdf->SetTitle('Rapport de Simulation - ' . $clientData['first_name'] . ' ' . $clientData['last_name']);
+    $pdf->SetAuthor($request['agent_nom'] ?? 'Agent');
+    $pdf->SetTitle('Rapport de Simulation - ' . $request['client_nom']);
     $pdf->SetSubject('Simulation de Crédit');
     
     // Set default monospaced font
@@ -71,7 +53,7 @@ try {
     $pdf->SetAutoPageBreak(TRUE, 25);
     
     // Generate the report
-    $pdf->generateCreditReport($request, $clientData, $scoreDetails, $userData);
+    $pdf->generateCreditReport($request, $scoreDetails);
     
     // Output PDF
     $filename = 'Simulation_' . str_pad($requestId, 6, '0', STR_PAD_LEFT) . '_' . date('Ymd') . '.pdf';

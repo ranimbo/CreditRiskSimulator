@@ -9,20 +9,21 @@ $pageTitle = 'Gestion des clients';
 require_once __DIR__ . '/includes/auth.php';
 requireAuth();
 
+require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/classes/Client.php';
 
 $clientModel = new Client();
 
 // Get filter parameters
 $search = trim($_GET['search'] ?? '');
-$situation = $_GET['situation'] ?? '';
+$situation_pro = $_GET['situation_pro'] ?? '';
 $page = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 10;
 
 // Build filters
 $filters = [];
 if ($search) $filters['search'] = $search;
-if ($situation) $filters['situation'] = $situation;
+if ($situation_pro) $filters['situation_pro'] = $situation_pro;
 
 // Get data
 $totalClients = $clientModel->count($filters);
@@ -68,20 +69,20 @@ require_once __DIR__ . '/includes/header.php';
                     type="text" 
                     name="search" 
                     value="<?php echo htmlspecialchars($search); ?>"
-                    placeholder="Rechercher par nom, prénom ou CIN..."
+                    placeholder="Rechercher par nom ou CIN..."
                     class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
             </div>
         </div>
         <div class="sm:w-48">
             <select 
-                name="situation" 
+                name="situation_pro" 
                 class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
                 <option value="">Toutes les situations</option>
                 <?php foreach (Client::getSituations() as $key => $label): ?>
-                <option value="<?php echo $key; ?>" <?php echo $situation === $key ? 'selected' : ''; ?>>
-                    <?php echo htmlspecialchars($key); ?>
+                <option value="<?php echo $key; ?>" <?php echo $situation_pro === $key ? 'selected' : ''; ?>>
+                    <?php echo htmlspecialchars($label); ?>
                 </option>
                 <?php endforeach; ?>
             </select>
@@ -90,7 +91,7 @@ require_once __DIR__ . '/includes/header.php';
             <i data-feather="filter" class="w-4 h-4"></i>
             Filtrer
         </button>
-        <?php if ($search || $situation): ?>
+        <?php if ($search || $situation_pro): ?>
         <a href="clients.php" class="btn btn-secondary">
             <i data-feather="x" class="w-4 h-4"></i>
             Réinitialiser
@@ -106,9 +107,9 @@ require_once __DIR__ . '/includes/header.php';
         <i data-feather="users" class="w-16 h-16 mx-auto text-slate-300 mb-4"></i>
         <h3 class="text-lg font-medium text-slate-900 mb-1">Aucun client trouvé</h3>
         <p class="text-slate-500 mb-4">
-            <?php echo $search || $situation ? 'Aucun client ne correspond à vos critères de recherche.' : 'Commencez par ajouter votre premier client.'; ?>
+            <?php echo $search || $situation_pro ? 'Aucun client ne correspond à vos critères de recherche.' : 'Commencez par ajouter votre premier client.'; ?>
         </p>
-        <?php if (!$search && !$situation): ?>
+        <?php if (!$search && !$situation_pro): ?>
         <a href="client-form.php" class="btn btn-primary">
             <i data-feather="plus" class="w-4 h-4"></i>
             Ajouter un client
@@ -123,7 +124,7 @@ require_once __DIR__ . '/includes/header.php';
                     <th>Client</th>
                     <th>CIN</th>
                     <th>Situation</th>
-                    <th>Revenu mensuel</th>
+                    <th>Revenu mensuel net</th>
                     <th>Taux d'endettement</th>
                     <th class="text-right">Actions</th>
                 </tr>
@@ -131,7 +132,7 @@ require_once __DIR__ . '/includes/header.php';
             <tbody>
                 <?php foreach ($clients as $client): ?>
                 <?php 
-                    $debtRatio = calculateDebtRatio($client['charges_mensuelles'], $client['revenu_mensuel']);
+                    $debtRatio = calculateDebtRatio($client['charges_mensuelles'], $client['revenu_mensuel_net']);
                     $age = calculateAge($client['date_naissance']);
                 ?>
                 <tr>
@@ -139,15 +140,15 @@ require_once __DIR__ . '/includes/header.php';
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
                                 <span class="text-sm font-medium text-primary-600">
-                                    <?php echo strtoupper(substr($client['prenom'], 0, 1) . substr($client['nom'], 0, 1)); ?>
+                                    <?php echo strtoupper(substr($client['nom'], 0, 2)); ?>
                                 </span>
                             </div>
                             <div>
                                 <p class="font-medium text-slate-900">
-                                    <?php echo htmlspecialchars($client['prenom'] . ' ' . $client['nom']); ?>
+                                    <?php echo htmlspecialchars($client['nom']); ?>
                                 </p>
                                 <p class="text-sm text-slate-500">
-                                    <?php echo $age; ?> ans - <?php echo htmlspecialchars($client['email'] ?? 'Pas d\'email'); ?>
+                                    <?php echo $age; ?> ans
                                 </p>
                             </div>
                         </div>
@@ -157,17 +158,16 @@ require_once __DIR__ . '/includes/header.php';
                     </td>
                     <td>
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                            <?php echo match($client['situation_professionnelle']) {
-                                'CDI', 'Fonctionnaire' => 'bg-green-100 text-green-800',
-                                'Independant', 'Retraite' => 'bg-blue-100 text-blue-800',
-                                'CDD' => 'bg-yellow-100 text-yellow-800',
+                            <?php echo match($client['situation_pro']) {
+                                'CDI', 'FONCTIONNAIRE' => 'bg-green-100 text-green-800',
+                                'INDEPENDANT' => 'bg-blue-100 text-blue-800',
                                 default => 'bg-red-100 text-red-800'
                             }; ?>">
-                            <?php echo htmlspecialchars($client['situation_professionnelle']); ?>
+                            <?php echo htmlspecialchars($client['situation_pro']); ?>
                         </span>
                     </td>
                     <td>
-                        <span class="font-medium"><?php echo formatCurrency($client['revenu_mensuel']); ?></span>
+                        <span class="font-medium"><?php echo formatCurrency($client['revenu_mensuel_net']); ?></span>
                     </td>
                     <td>
                         <div class="flex items-center gap-2">
@@ -214,21 +214,21 @@ require_once __DIR__ . '/includes/header.php';
         </p>
         <div class="pagination">
             <?php if ($pagination['has_prev']): ?>
-            <a href="?page=<?php echo $page - 1; ?>&search=<?php echo urlencode($search); ?>&situation=<?php echo urlencode($situation); ?>" 
+            <a href="?page=<?php echo $page - 1; ?>&search=<?php echo urlencode($search); ?>&situation_pro=<?php echo urlencode($situation_pro); ?>" 
                class="pagination-item">
                 <i data-feather="chevron-left" class="w-4 h-4"></i>
             </a>
             <?php endif; ?>
             
             <?php for ($i = max(1, $page - 2); $i <= min($pagination['total_pages'], $page + 2); $i++): ?>
-            <a href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&situation=<?php echo urlencode($situation); ?>" 
+            <a href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&situation_pro=<?php echo urlencode($situation_pro); ?>" 
                class="pagination-item <?php echo $i === $page ? 'active' : ''; ?>">
                 <?php echo $i; ?>
             </a>
             <?php endfor; ?>
             
             <?php if ($pagination['has_next']): ?>
-            <a href="?page=<?php echo $page + 1; ?>&search=<?php echo urlencode($search); ?>&situation=<?php echo urlencode($situation); ?>" 
+            <a href="?page=<?php echo $page + 1; ?>&search=<?php echo urlencode($search); ?>&situation_pro=<?php echo urlencode($situation_pro); ?>" 
                class="pagination-item">
                 <i data-feather="chevron-right" class="w-4 h-4"></i>
             </a>

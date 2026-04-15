@@ -56,9 +56,8 @@ function getCurrentUser(): ?array {
         'id' => $_SESSION['user_id'],
         'email' => $_SESSION['user_email'],
         'nom' => $_SESSION['user_nom'],
-        'prenom' => $_SESSION['user_prenom'],
         'role' => $_SESSION['user_role'],
-        'full_name' => $_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']
+        'full_name' => $_SESSION['user_nom']
     ];
 }
 
@@ -71,8 +70,7 @@ function setUserSession(User $user): void {
     $_SESSION['user_id'] = $user->id;
     $_SESSION['user_email'] = $user->email;
     $_SESSION['user_nom'] = $user->nom;
-    $_SESSION['user_prenom'] = $user->prenom;
-    $_SESSION['user_role'] = $user->role;
+    $_SESSION['user_role'] = $user->role_type;
     $_SESSION['login_time'] = time();
     
     // Regenerate session ID to prevent session fixation

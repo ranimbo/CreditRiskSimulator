@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/../vendor/tcpdf/tcpdf.php';
+require_once __DIR__ . '/ScoringEngine.php';
 
 class PDFReport extends TCPDF {
     
@@ -45,7 +46,7 @@ class PDFReport extends TCPDF {
     /**
      * Generate a credit simulation report
      */
-    public function generateCreditReport($request, $client, $scoreDetails, $user) {
+    public function generateCreditReport($request, $scoreDetails) {
         $this->AddPage();
         
         // Title
@@ -61,7 +62,7 @@ class PDFReport extends TCPDF {
         $this->Ln(10);
         
         // Decision Box
-        $this->drawDecisionBox($request['decision'], $request['total_score']);
+        $this->drawDecisionBox($request['resultat'] ?? 'A_ANALYSER', $request['valeur_totale'] ?? 0);
         $this->Ln(15);
         
         // Two column layout
@@ -76,12 +77,11 @@ class PDFReport extends TCPDF {
         $this->SetTextColor(51, 51, 51);
         
         $clientInfo = [
-            'Nom complet' => $client['first_name'] . ' ' . $client['last_name'],
-            'Email' => $client['email'],
-            'Téléphone' => $client['phone'] ?? 'N/A',
-            'Date de naissance' => isset($client['birth_date']) ? date('d/m/Y', strtotime($client['birth_date'])) : 'N/A',
-            'Profession' => $client['profession'] ?? 'N/A',
-            'Revenu mensuel' => number_format($client['monthly_income'] ?? 0, 2, ',', ' ') . ' €'
+            'Nom complet' => $request['client_nom'] ?? 'N/A',
+            'CIN' => $request['cin'] ?? 'N/A',
+            'Situation' => $request['situation_pro'] ?? 'N/A',
+            'Revenu net' => number_format($request['revenu_mensuel_net'] ?? 0, 2, ',', ' ') . ' MAD',
+            'Charges' => number_format($request['charges_mensuelles'] ?? 0, 2, ',', ' ') . ' MAD'
         ];
         
         foreach ($clientInfo as $label => $value) {
@@ -102,12 +102,9 @@ class PDFReport extends TCPDF {
         $this->SetTextColor(51, 51, 51);
         
         $creditInfo = [
-            'Montant demandé' => number_format($request['amount'], 2, ',', ' ') . ' €',
-            'Durée' => $request['duration'] . ' mois',
-            'Taux d\'intérêt' => number_format($request['interest_rate'], 2, ',', ' ') . ' %',
-            'Mensualité' => number_format($request['monthly_payment'], 2, ',', ' ') . ' €',
-            'Coût total' => number_format($request['monthly_payment'] * $request['duration'], 2, ',', ' ') . ' €',
-            'Objet' => $this->getCreditPurposeLabel($request['purpose'])
+            'Montant demandé' => number_format($request['montant_demande'] ?? 0, 2, ',', ' ') . ' MAD',
+            'Durée' => ($request['duree'] ?? 0) . ' mois',
+            'Type' => $request['type_credit'] ?? 'N/A',
         ];
         
         foreach ($creditInfo as $label => $value) {
@@ -124,21 +121,21 @@ class PDFReport extends TCPDF {
         $this->Line(10, $this->GetY(), 100, $this->GetY());
         $this->Ln(3);
         
-        $this->drawScoreTable($scoreDetails, $request['total_score']);
+        $this->drawScoreTable($scoreDetails, $request['valeur_totale'] ?? 0);
         
         $this->Ln(10);
         
-        // Recommendation
-        if (!empty($request['recommendation'])) {
+        // Justification
+        if (!empty($request['justification'])) {
             $this->SetFont('helvetica', 'B', 12);
             $this->SetTextColor(0, 82, 155);
-            $this->Cell(0, 8, 'RECOMMANDATION', 0, 1, 'L');
+            $this->Cell(0, 8, 'JUSTIFICATION & RECOMMANDATIONS', 0, 1, 'L');
             $this->Line(10, $this->GetY(), 100, $this->GetY());
             $this->Ln(3);
             
             $this->SetFont('helvetica', '', 10);
             $this->SetTextColor(51, 51, 51);
-            $this->MultiCell(0, 6, $request['recommendation'], 0, 'L');
+            $this->MultiCell(0, 6, $request['justification'], 0, 'L');
         }
         
         // Signature section
@@ -147,7 +144,7 @@ class PDFReport extends TCPDF {
         $this->Cell(95, 6, 'Agent bancaire:', 0, 0, 'L');
         $this->Cell(95, 6, 'Date:', 0, 1, 'L');
         $this->Ln(5);
-        $this->Cell(95, 6, $user['first_name'] . ' ' . $user['last_name'], 0, 0, 'L');
+        $this->Cell(95, 6, $request['agent_nom'] ?? 'Agent', 0, 0, 'L');
         $this->Cell(95, 6, date('d/m/Y'), 0, 1, 'L');
         
         // Disclaimer
@@ -162,15 +159,15 @@ class PDFReport extends TCPDF {
      */
     private function drawDecisionBox($decision, $score) {
         $colors = [
-            'approved' => [34, 197, 94],      // Green
-            'rejected' => [239, 68, 68],       // Red
-            'manual_review' => [245, 158, 11]  // Yellow/Orange
+            'ACCORDE' => [34, 197, 94],      // Green
+            'REFUSE' => [239, 68, 68],       // Red
+            'A_ANALYSER' => [245, 158, 11]  // Yellow/Orange
         ];
         
         $labels = [
-            'approved' => 'CRÉDIT APPROUVÉ',
-            'rejected' => 'CRÉDIT REFUSÉ',
-            'manual_review' => 'ÉTUDE MANUELLE REQUISE'
+            'ACCORDE' => 'CRÉDIT APPROUVÉ',
+            'REFUSE' => 'CRÉDIT REFUSÉ',
+            'A_ANALYSER' => 'ÉTUDE MANUELLE REQUISE'
         ];
         
         $color = $colors[$decision] ?? [128, 128, 128];
@@ -210,12 +207,14 @@ class PDFReport extends TCPDF {
         $this->SetFont('helvetica', '', 9);
         
         if (!empty($scoreDetails)) {
-            foreach ($scoreDetails as $criterion => $data) {
-                $percentage = ($data['score'] / $data['max_score']) * 100;
+            $criteriaMeta = ScoringEngine::getCriteriaLabels();
+            foreach ($scoreDetails as $criterion => $scoreValue) {
+                $meta = $criteriaMeta[$criterion] ?? ['label' => $criterion, 'max' => 25];
+                $percentage = ($scoreValue / $meta['max']) * 100;
                 
-                $this->Cell(80, 7, $data['name'] ?? $criterion, 1, 0, 'L');
-                $this->Cell(35, 7, number_format($data['score'], 1), 1, 0, 'C');
-                $this->Cell(35, 7, number_format($data['max_score'], 1), 1, 0, 'C');
+                $this->Cell(80, 7, $meta['label'], 1, 0, 'L');
+                $this->Cell(35, 7, number_format($scoreValue, 1), 1, 0, 'C');
+                $this->Cell(35, 7, number_format($meta['max'], 1), 1, 0, 'C');
                 $this->Cell(40, 7, number_format($percentage, 1) . '%', 1, 1, 'C');
             }
         }
@@ -230,20 +229,5 @@ class PDFReport extends TCPDF {
         $this->Cell(40, 8, number_format($totalScore, 1) . '%', 1, 1, 'C', true);
         
         $this->SetTextColor(51, 51, 51);
-    }
-    
-    /**
-     * Get credit purpose label
-     */
-    private function getCreditPurposeLabel($purpose) {
-        $labels = [
-            'personal' => 'Crédit personnel',
-            'auto' => 'Crédit automobile',
-            'home' => 'Crédit immobilier',
-            'business' => 'Crédit professionnel',
-            'education' => 'Crédit études',
-            'other' => 'Autre'
-        ];
-        return $labels[$purpose] ?? $purpose;
     }
 }

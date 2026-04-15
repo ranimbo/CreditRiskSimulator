@@ -36,18 +36,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = [
         'cin' => strtoupper(trim($_POST['cin'] ?? '')),
         'nom' => trim($_POST['nom'] ?? ''),
-        'prenom' => trim($_POST['prenom'] ?? ''),
         'date_naissance' => $_POST['date_naissance'] ?? '',
-        'email' => trim($_POST['email'] ?? '') ?: null,
-        'telephone' => trim($_POST['telephone'] ?? '') ?: null,
-        'adresse' => trim($_POST['adresse'] ?? '') ?: null,
-        'ville' => trim($_POST['ville'] ?? '') ?: null,
-        'situation_professionnelle' => $_POST['situation_professionnelle'] ?? '',
-        'employeur' => trim($_POST['employeur'] ?? '') ?: null,
+        'situation_pro' => $_POST['situation_pro'] ?? '',
         'anciennete_emploi' => (int)($_POST['anciennete_emploi'] ?? 0),
-        'revenu_mensuel' => (float)($_POST['revenu_mensuel'] ?? 0),
+        'revenu_mensuel_net' => (float)($_POST['revenu_mensuel_net'] ?? 0),
         'charges_mensuelles' => (float)($_POST['charges_mensuelles'] ?? 0),
-        'historique_credit' => $_POST['historique_credit'] ?? 'Aucun incident',
+        'historique_credit' => (int)($_POST['historique_credit'] ?? 1),
     ];
     
     // Validation
@@ -61,10 +55,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors['nom'] = 'Le nom est requis.';
     }
     
-    if (empty($data['prenom'])) {
-        $errors['prenom'] = 'Le prénom est requis.';
-    }
-    
     if (empty($data['date_naissance'])) {
         $errors['date_naissance'] = 'La date de naissance est requise.';
     } else {
@@ -74,16 +64,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    if (!empty($data['email']) && !isValidEmail($data['email'])) {
-        $errors['email'] = 'Adresse email invalide.';
+    if (empty($data['situation_pro'])) {
+        $errors['situation_pro'] = 'La situation professionnelle est requise.';
     }
     
-    if (empty($data['situation_professionnelle'])) {
-        $errors['situation_professionnelle'] = 'La situation professionnelle est requise.';
-    }
-    
-    if ($data['revenu_mensuel'] < 0) {
-        $errors['revenu_mensuel'] = 'Le revenu mensuel ne peut pas être négatif.';
+    if ($data['revenu_mensuel_net'] < 0) {
+        $errors['revenu_mensuel_net'] = 'Le revenu mensuel ne peut pas être négatif.';
     }
     
     if ($data['charges_mensuelles'] < 0) {
@@ -97,7 +83,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $clientModel->update($client['id'], $data);
                 setFlashMessage('success', 'Client mis à jour avec succès.');
             } else {
-                $data['agent_id'] = getCurrentUserId();
                 $clientModel->create($data);
                 setFlashMessage('success', 'Client créé avec succès.');
             }
@@ -181,93 +166,21 @@ require_once __DIR__ . '/includes/header.php';
                 <?php endif; ?>
             </div>
             
-            <!-- Nom -->
-            <div>
-                <label for="nom" class="form-label">Nom <span class="text-red-500">*</span></label>
+            <!-- Nom Complet -->
+            <div class="md:col-span-2">
+                <label for="nom" class="form-label">Nom complet <span class="text-red-500">*</span></label>
                 <input 
                     type="text" 
                     id="nom" 
                     name="nom" 
                     value="<?php echo htmlspecialchars($client['nom'] ?? ''); ?>"
                     class="form-input <?php echo isset($errors['nom']) ? 'border-red-500' : ''; ?>"
-                    placeholder="Nom de famille"
+                    placeholder="Nom complet du client"
                     required
                 >
                 <?php if (isset($errors['nom'])): ?>
                 <p class="form-error"><?php echo $errors['nom']; ?></p>
                 <?php endif; ?>
-            </div>
-            
-            <!-- Prénom -->
-            <div>
-                <label for="prenom" class="form-label">Prénom <span class="text-red-500">*</span></label>
-                <input 
-                    type="text" 
-                    id="prenom" 
-                    name="prenom" 
-                    value="<?php echo htmlspecialchars($client['prenom'] ?? ''); ?>"
-                    class="form-input <?php echo isset($errors['prenom']) ? 'border-red-500' : ''; ?>"
-                    placeholder="Prénom"
-                    required
-                >
-                <?php if (isset($errors['prenom'])): ?>
-                <p class="form-error"><?php echo $errors['prenom']; ?></p>
-                <?php endif; ?>
-            </div>
-            
-            <!-- Email -->
-            <div>
-                <label for="email" class="form-label">Email</label>
-                <input 
-                    type="email" 
-                    id="email" 
-                    name="email" 
-                    value="<?php echo htmlspecialchars($client['email'] ?? ''); ?>"
-                    class="form-input <?php echo isset($errors['email']) ? 'border-red-500' : ''; ?>"
-                    placeholder="email@exemple.com"
-                >
-                <?php if (isset($errors['email'])): ?>
-                <p class="form-error"><?php echo $errors['email']; ?></p>
-                <?php endif; ?>
-            </div>
-            
-            <!-- Téléphone -->
-            <div>
-                <label for="telephone" class="form-label">Téléphone</label>
-                <input 
-                    type="tel" 
-                    id="telephone" 
-                    name="telephone" 
-                    value="<?php echo htmlspecialchars($client['telephone'] ?? ''); ?>"
-                    class="form-input"
-                    placeholder="0612345678"
-                >
-            </div>
-            
-            <!-- Adresse -->
-            <div>
-                <label for="adresse" class="form-label">Adresse</label>
-                <input 
-                    type="text" 
-                    id="adresse" 
-                    name="adresse" 
-                    value="<?php echo htmlspecialchars($client['adresse'] ?? ''); ?>"
-                    class="form-input"
-                    placeholder="Adresse complète"
-                >
-            </div>
-            
-            <!-- Ville -->
-            <div>
-                <label for="ville" class="form-label">Ville</label>
-                <input 
-                    type="text" 
-                    id="ville" 
-                    name="ville" 
-                    value="<?php echo htmlspecialchars($client['ville'] ?? ''); ?>"
-                    class="form-input"
-                    placeholder="Ville"
-                >
             </div>
         </div>
     </div>
@@ -275,41 +188,28 @@ require_once __DIR__ . '/includes/header.php';
     <!-- Professional Information -->
     <div class="bg-white rounded-xl border border-slate-200">
         <div class="p-6 border-b border-slate-200">
-            <h2 class="text-lg font-semibold text-slate-900">Informations professionnelles</h2>
+            <h2 class="text-lg font-semibold text-slate-900">Informations professionnelles et antécédents</h2>
         </div>
         <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Situation professionnelle -->
             <div>
-                <label for="situation_professionnelle" class="form-label">Situation professionnelle <span class="text-red-500">*</span></label>
+                <label for="situation_pro" class="form-label">Situation professionnelle <span class="text-red-500">*</span></label>
                 <select 
-                    id="situation_professionnelle" 
-                    name="situation_professionnelle" 
-                    class="form-input <?php echo isset($errors['situation_professionnelle']) ? 'border-red-500' : ''; ?>"
+                    id="situation_pro" 
+                    name="situation_pro" 
+                    class="form-input <?php echo isset($errors['situation_pro']) ? 'border-red-500' : ''; ?>"
                     required
                 >
                     <option value="">Sélectionner...</option>
                     <?php foreach (Client::getSituations() as $key => $label): ?>
-                    <option value="<?php echo $key; ?>" <?php echo ($client['situation_professionnelle'] ?? '') === $key ? 'selected' : ''; ?>>
+                    <option value="<?php echo $key; ?>" <?php echo ($client['situation_pro'] ?? '') === $key ? 'selected' : ''; ?>>
                         <?php echo htmlspecialchars($label); ?>
                     </option>
                     <?php endforeach; ?>
                 </select>
-                <?php if (isset($errors['situation_professionnelle'])): ?>
-                <p class="form-error"><?php echo $errors['situation_professionnelle']; ?></p>
+                <?php if (isset($errors['situation_pro'])): ?>
+                <p class="form-error"><?php echo $errors['situation_pro']; ?></p>
                 <?php endif; ?>
-            </div>
-            
-            <!-- Employeur -->
-            <div>
-                <label for="employeur" class="form-label">Employeur</label>
-                <input 
-                    type="text" 
-                    id="employeur" 
-                    name="employeur" 
-                    value="<?php echo htmlspecialchars($client['employeur'] ?? ''); ?>"
-                    class="form-input"
-                    placeholder="Nom de l'employeur"
-                >
             </div>
             
             <!-- Ancienneté -->
@@ -337,8 +237,8 @@ require_once __DIR__ . '/includes/header.php';
                     name="historique_credit" 
                     class="form-input"
                 >
-                    <?php foreach (Client::getCreditHistoryOptions() as $key => $label): ?>
-                    <option value="<?php echo $key; ?>" <?php echo ($client['historique_credit'] ?? 'Aucun incident') === $key ? 'selected' : ''; ?>>
+                    <?php foreach (Client::getCreditHistoryOptions() as $val => $label): ?>
+                    <option value="<?php echo $val; ?>" <?php echo (int)($client['historique_credit'] ?? 1) === $val ? 'selected' : ''; ?>>
                         <?php echo htmlspecialchars($label); ?>
                     </option>
                     <?php endforeach; ?>
@@ -353,21 +253,21 @@ require_once __DIR__ . '/includes/header.php';
             <h2 class="text-lg font-semibold text-slate-900">Informations financières</h2>
         </div>
         <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Revenu mensuel -->
+            <!-- Revenu mensuel net -->
             <div>
-                <label for="revenu_mensuel" class="form-label">Revenu mensuel (MAD) <span class="text-red-500">*</span></label>
+                <label for="revenu_mensuel_net" class="form-label">Revenu mensuel net (MAD) <span class="text-red-500">*</span></label>
                 <input 
                     type="number" 
-                    id="revenu_mensuel" 
-                    name="revenu_mensuel" 
-                    value="<?php echo (float)($client['revenu_mensuel'] ?? 0); ?>"
-                    class="form-input <?php echo isset($errors['revenu_mensuel']) ? 'border-red-500' : ''; ?>"
+                    id="revenu_mensuel_net" 
+                    name="revenu_mensuel_net" 
+                    value="<?php echo (float)($client['revenu_mensuel_net'] ?? 0); ?>"
+                    class="form-input <?php echo isset($errors['revenu_mensuel_net']) ? 'border-red-500' : ''; ?>"
                     min="0"
                     step="0.01"
                     required
                 >
-                <?php if (isset($errors['revenu_mensuel'])): ?>
-                <p class="form-error"><?php echo $errors['revenu_mensuel']; ?></p>
+                <?php if (isset($errors['revenu_mensuel_net'])): ?>
+                <p class="form-error"><?php echo $errors['revenu_mensuel_net']; ?></p>
                 <?php endif; ?>
             </div>
             
@@ -399,8 +299,8 @@ require_once __DIR__ . '/includes/header.php';
                         <div id="debt-ratio-display" class="text-2xl font-bold text-slate-900">
                             <?php 
                                 $debtRatio = 0;
-                                if (isset($client['revenu_mensuel']) && $client['revenu_mensuel'] > 0) {
-                                    $debtRatio = ($client['charges_mensuelles'] / $client['revenu_mensuel']) * 100;
+                                if (isset($client['revenu_mensuel_net']) && $client['revenu_mensuel_net'] > 0) {
+                                    $debtRatio = ($client['charges_mensuelles'] / $client['revenu_mensuel_net']) * 100;
                                 }
                                 echo formatPercentage($debtRatio, 1);
                             ?>
@@ -424,7 +324,7 @@ require_once __DIR__ . '/includes/header.php';
 <script>
 // Real-time debt ratio calculation
 document.addEventListener('DOMContentLoaded', function() {
-    const revenuInput = document.getElementById('revenu_mensuel');
+    const revenuInput = document.getElementById('revenu_mensuel_net');
     const chargesInput = document.getElementById('charges_mensuelles');
     const ratioDisplay = document.getElementById('debt-ratio-display');
     
@@ -437,7 +337,8 @@ document.addEventListener('DOMContentLoaded', function() {
             ratio = (charges / revenu) * 100;
         }
         
-        ratioDisplay.textContent = formatPercentage(ratio);
+        // simple formatting since JS doesn't have our formatPercentage natively injected
+        ratioDisplay.textContent = ratio.toFixed(1) + '%';
         
         // Update color based on ratio
         ratioDisplay.className = 'text-2xl font-bold ';

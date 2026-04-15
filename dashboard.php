@@ -16,14 +16,14 @@ $db = Database::getInstance();
 
 // Get statistics
 $stats = [
-    'total_clients' => (int) $db->fetchValue("SELECT COUNT(*) FROM clients"),
-    'total_requests' => (int) $db->fetchValue("SELECT COUNT(*) FROM credit_requests"),
-    'approved' => (int) $db->fetchValue("SELECT COUNT(*) FROM credit_requests WHERE statut = 'approuve'"),
-    'refused' => (int) $db->fetchValue("SELECT COUNT(*) FROM credit_requests WHERE statut = 'refuse'"),
-    'pending' => (int) $db->fetchValue("SELECT COUNT(*) FROM credit_requests WHERE statut = 'en_attente'"),
-    'in_review' => (int) $db->fetchValue("SELECT COUNT(*) FROM credit_requests WHERE statut = 'en_revision'"),
-    'total_amount_approved' => (float) $db->fetchValue("SELECT COALESCE(SUM(montant), 0) FROM credit_requests WHERE statut = 'approuve'"),
-    'avg_score' => (float) $db->fetchValue("SELECT COALESCE(AVG(score_total), 0) FROM scores"),
+    'total_clients' => (int) $db->fetchValue("SELECT COUNT(*) FROM client"),
+    'total_requests' => (int) $db->fetchValue("SELECT COUNT(*) FROM demande_credit"),
+    'approved' => (int) $db->fetchValue("SELECT COUNT(*) FROM demande_credit WHERE statut = 'ACCORDE'"),
+    'refused' => (int) $db->fetchValue("SELECT COUNT(*) FROM demande_credit WHERE statut = 'REFUSE'"),
+    'pending' => (int) $db->fetchValue("SELECT COUNT(*) FROM demande_credit WHERE statut = 'en_attente'"),
+    'in_review' => (int) $db->fetchValue("SELECT COUNT(*) FROM demande_credit WHERE statut = 'A_ANALYSER'"),
+    'total_amount_approved' => (float) $db->fetchValue("SELECT COALESCE(SUM(montant_demande), 0) FROM demande_credit WHERE statut = 'ACCORDE'"),
+    'avg_score' => (float) $db->fetchValue("SELECT COALESCE(AVG(valeur_totale), 0) FROM score"),
 ];
 
 // Calculate approval rate
@@ -33,13 +33,14 @@ $stats['approval_rate'] = $stats['total_requests'] > 0
 
 // Get recent requests
 $recentRequests = $db->fetchAll("
-    SELECT cr.*, c.nom as client_nom, c.prenom as client_prenom, c.cin,
-           s.score_total, u.nom as agent_nom, u.prenom as agent_prenom
-    FROM credit_requests cr
-    LEFT JOIN clients c ON cr.client_id = c.id
-    LEFT JOIN scores s ON cr.id = s.credit_request_id
-    LEFT JOIN users u ON cr.agent_id = u.id
-    ORDER BY cr.date_demande DESC
+    SELECT dc.*, c.nom as client_nom, c.cin,
+           s.valeur_totale, u.nom as agent_nom
+    FROM demande_credit dc
+    LEFT JOIN client c ON dc.client_id = c.id
+    LEFT JOIN score s ON dc.id = s.demande_id
+    LEFT JOIN agent_bancaire ab ON dc.agent_id = ab.id
+    LEFT JOIN utilisateur u ON ab.id = u.id
+    ORDER BY dc.date_creation DESC
     LIMIT 5
 ");
 
@@ -54,7 +55,7 @@ require_once __DIR__ . '/includes/header.php';
 <!-- Page Header -->
 <div class="mb-8">
     <h1 class="text-2xl font-bold text-slate-900">Tableau de bord</h1>
-    <p class="text-slate-500 mt-1">Bienvenue, <?php echo htmlspecialchars($currentUser['prenom']); ?>. Voici un aperçu de votre activité.</p>
+    <p class="text-slate-500 mt-1">Bienvenue, <?php echo htmlspecialchars($currentUser['nom']); ?>. Voici un aperçu de votre activité.</p>
 </div>
 
 <!-- Stats Grid -->
@@ -135,7 +136,7 @@ require_once __DIR__ . '/includes/header.php';
                     </div>
                     <div class="text-center p-4 bg-blue-50 rounded-lg">
                         <div class="text-2xl font-bold text-blue-600"><?php echo $stats['in_review']; ?></div>
-                        <div class="text-sm text-blue-700">En révision</div>
+                        <div class="text-sm text-blue-700">À analyser</div>
                     </div>
                 </div>
                 
@@ -192,7 +193,7 @@ require_once __DIR__ . '/includes/header.php';
                     <p class="text-sm text-slate-500">Évaluer un crédit</p>
                 </div>
             </a>
-            <a href="historique.php" class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
+            <a href="history.php" class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
                 <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                     <i data-feather="clock" class="w-5 h-5 text-blue-600"></i>
                 </div>
@@ -211,7 +212,7 @@ require_once __DIR__ . '/includes/header.php';
     <div class="bg-white rounded-xl border border-slate-200">
         <div class="p-6 border-b border-slate-200 flex items-center justify-between">
             <h2 class="text-lg font-semibold text-slate-900">Demandes récentes</h2>
-            <a href="historique.php" class="text-sm text-primary-600 hover:text-primary-700 font-medium">Voir tout</a>
+            <a href="history.php" class="text-sm text-primary-600 hover:text-primary-700 font-medium">Voir tout</a>
         </div>
         <div class="divide-y divide-slate-100">
             <?php if (empty($recentRequests)): ?>
@@ -226,23 +227,23 @@ require_once __DIR__ . '/includes/header.php';
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
                             <span class="text-sm font-medium text-slate-600">
-                                <?php echo strtoupper(substr($request['client_prenom'], 0, 1) . substr($request['client_nom'], 0, 1)); ?>
+                                <?php echo strtoupper(substr($request['client_nom'], 0, 2)); ?>
                             </span>
                         </div>
                         <div>
                             <p class="font-medium text-slate-900">
-                                <?php echo htmlspecialchars($request['client_prenom'] . ' ' . $request['client_nom']); ?>
+                                <?php echo htmlspecialchars($request['client_nom']); ?>
                             </p>
                             <p class="text-sm text-slate-500">
-                                <?php echo htmlspecialchars($request['reference']); ?> - <?php echo formatCurrency($request['montant']); ?>
+                                #<?php echo htmlspecialchars($request['id']); ?> - <?php echo formatCurrency($request['montant_demande']); ?>
                             </p>
                         </div>
                     </div>
                     <div class="text-right">
                         <?php echo getStatusBadge($request['statut'], 'credit'); ?>
-                        <?php if ($request['score_total']): ?>
-                        <p class="text-sm <?php echo getScoreColorClass($request['score_total']); ?> mt-1">
-                            Score: <?php echo $request['score_total']; ?>/100
+                        <?php if ($request['valeur_totale']): ?>
+                        <p class="text-sm <?php echo getScoreColorClass($request['valeur_totale']); ?> mt-1">
+                            Score: <?php echo $request['valeur_totale']; ?>/100
                         </p>
                         <?php endif; ?>
                     </div>
@@ -272,20 +273,20 @@ require_once __DIR__ . '/includes/header.php';
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
                             <span class="text-sm font-medium text-primary-600">
-                                <?php echo strtoupper(substr($client['prenom'], 0, 1) . substr($client['nom'], 0, 1)); ?>
+                                <?php echo strtoupper(substr($client['nom'], 0, 2)); ?>
                             </span>
                         </div>
                         <div>
                             <p class="font-medium text-slate-900">
-                                <?php echo htmlspecialchars($client['prenom'] . ' ' . $client['nom']); ?>
+                                <?php echo htmlspecialchars($client['nom']); ?>
                             </p>
                             <p class="text-sm text-slate-500">
-                                <?php echo htmlspecialchars($client['cin']); ?> - <?php echo htmlspecialchars($client['situation_professionnelle']); ?>
+                                <?php echo htmlspecialchars($client['cin']); ?> - <?php echo htmlspecialchars($client['situation_pro']); ?>
                             </p>
                         </div>
                     </div>
                     <div class="text-right">
-                        <p class="text-sm font-medium text-slate-900"><?php echo formatCurrency($client['revenu_mensuel']); ?></p>
+                        <p class="text-sm font-medium text-slate-900"><?php echo formatCurrency($client['revenu_mensuel_net']); ?></p>
                         <p class="text-xs text-slate-500">revenu mensuel</p>
                     </div>
                 </div>

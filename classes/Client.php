@@ -4,6 +4,7 @@
  * 
  * Handles all client-related database operations including
  * CRUD operations, search, and validation.
+ * Adapté au nouveau schéma : table client unique sans prenom/email
  */
 
 require_once __DIR__ . '/Database.php';
@@ -22,10 +23,7 @@ class Client {
      * @return array|false Client data or false
      */
     public function findById(int $id): array|false {
-        $sql = "SELECT c.*, u.nom as agent_nom, u.prenom as agent_prenom 
-                FROM clients c 
-                LEFT JOIN users u ON c.agent_id = u.id 
-                WHERE c.id = ?";
+        $sql = "SELECT * FROM client WHERE id = ?";
         return $this->db->fetchOne($sql, [$id]);
     }
     
@@ -36,42 +34,34 @@ class Client {
      * @return array|false Client data or false
      */
     public function findByCIN(string $cin): array|false {
-        $sql = "SELECT * FROM clients WHERE cin = ?";
+        $sql = "SELECT * FROM client WHERE cin = ?";
         return $this->db->fetchOne($sql, [$cin]);
     }
     
     /**
      * Get all clients with optional filtering and pagination
      * 
-     * @param array $filters Filters (search, situation, agent_id)
+     * @param array $filters Filters (search, situation_pro)
      * @param int $limit Number of results
      * @param int $offset Offset for pagination
      * @return array Clients list
      */
     public function getAll(array $filters = [], int $limit = 10, int $offset = 0): array {
-        $sql = "SELECT c.*, u.nom as agent_nom, u.prenom as agent_prenom 
-                FROM clients c 
-                LEFT JOIN users u ON c.agent_id = u.id 
-                WHERE 1=1";
+        $sql = "SELECT * FROM client WHERE 1=1";
         $params = [];
         
         if (!empty($filters['search'])) {
-            $sql .= " AND (c.nom LIKE ? OR c.prenom LIKE ? OR c.cin LIKE ? OR c.email LIKE ?)";
+            $sql .= " AND (nom LIKE ? OR cin LIKE ?)";
             $search = '%' . $filters['search'] . '%';
-            $params = array_merge($params, [$search, $search, $search, $search]);
+            $params = array_merge($params, [$search, $search]);
         }
         
-        if (!empty($filters['situation'])) {
-            $sql .= " AND c.situation_professionnelle = ?";
-            $params[] = $filters['situation'];
+        if (!empty($filters['situation_pro'])) {
+            $sql .= " AND situation_pro = ?";
+            $params[] = $filters['situation_pro'];
         }
         
-        if (!empty($filters['agent_id'])) {
-            $sql .= " AND c.agent_id = ?";
-            $params[] = $filters['agent_id'];
-        }
-        
-        $sql .= " ORDER BY c.date_creation DESC";
+        $sql .= " ORDER BY id DESC";
         $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
         
         return $this->db->fetchAll($sql, $params);
@@ -84,23 +74,18 @@ class Client {
      * @return int Total count
      */
     public function count(array $filters = []): int {
-        $sql = "SELECT COUNT(*) FROM clients c WHERE 1=1";
+        $sql = "SELECT COUNT(*) FROM client WHERE 1=1";
         $params = [];
         
         if (!empty($filters['search'])) {
-            $sql .= " AND (c.nom LIKE ? OR c.prenom LIKE ? OR c.cin LIKE ? OR c.email LIKE ?)";
+            $sql .= " AND (nom LIKE ? OR cin LIKE ?)";
             $search = '%' . $filters['search'] . '%';
-            $params = array_merge($params, [$search, $search, $search, $search]);
+            $params = array_merge($params, [$search, $search]);
         }
         
-        if (!empty($filters['situation'])) {
-            $sql .= " AND c.situation_professionnelle = ?";
-            $params[] = $filters['situation'];
-        }
-        
-        if (!empty($filters['agent_id'])) {
-            $sql .= " AND c.agent_id = ?";
-            $params[] = $filters['agent_id'];
+        if (!empty($filters['situation_pro'])) {
+            $sql .= " AND situation_pro = ?";
+            $params[] = $filters['situation_pro'];
         }
         
         return (int) $this->db->fetchValue($sql, $params);
@@ -115,11 +100,11 @@ class Client {
      */
     public function create(array $data): int {
         // Validate CIN uniqueness
-        if ($this->db->exists('clients', 'cin', $data['cin'])) {
+        if ($this->db->exists('client', 'cin', $data['cin'])) {
             throw new Exception("Un client avec ce CIN existe déjà.");
         }
         
-        return $this->db->insert('clients', $data);
+        return $this->db->insert('client', $data);
     }
     
     /**
@@ -132,11 +117,11 @@ class Client {
      */
     public function update(int $id, array $data): int {
         // Validate CIN uniqueness
-        if (!empty($data['cin']) && $this->db->exists('clients', 'cin', $data['cin'], $id)) {
+        if (!empty($data['cin']) && $this->db->exists('client', 'cin', $data['cin'], $id)) {
             throw new Exception("Un autre client avec ce CIN existe déjà.");
         }
         
-        return $this->db->update('clients', $data, 'id = ?', [$id]);
+        return $this->db->update('client', $data, 'id = ?', [$id]);
     }
     
     /**
@@ -149,7 +134,7 @@ class Client {
     public function delete(int $id): int {
         // Check for credit requests
         $hasRequests = $this->db->fetchValue(
-            "SELECT COUNT(*) FROM credit_requests WHERE client_id = ?",
+            "SELECT COUNT(*) FROM demande_credit WHERE client_id = ?",
             [$id]
         );
         
@@ -157,7 +142,7 @@ class Client {
             throw new Exception("Impossible de supprimer ce client car il a des demandes de crédit associées.");
         }
         
-        return $this->db->delete('clients', 'id = ?', [$id]);
+        return $this->db->delete('client', 'id = ?', [$id]);
     }
     
     /**
@@ -167,15 +152,15 @@ class Client {
      */
     public function getStats(): array {
         return [
-            'total' => (int) $this->db->fetchValue("SELECT COUNT(*) FROM clients"),
+            'total' => (int) $this->db->fetchValue("SELECT COUNT(*) FROM client"),
             'by_situation' => $this->db->fetchAll(
-                "SELECT situation_professionnelle, COUNT(*) as count 
-                 FROM clients 
-                 GROUP BY situation_professionnelle 
+                "SELECT situation_pro, COUNT(*) as count 
+                 FROM client 
+                 GROUP BY situation_pro 
                  ORDER BY count DESC"
             ),
             'recent' => (int) $this->db->fetchValue(
-                "SELECT COUNT(*) FROM clients WHERE date_creation >= DATE_SUB(NOW(), INTERVAL 30 DAY)"
+                "SELECT COUNT(*) FROM client ORDER BY id DESC LIMIT 5"
             ),
         ];
     }
@@ -187,11 +172,7 @@ class Client {
      * @return array Recent clients
      */
     public function getRecent(int $limit = 5): array {
-        $sql = "SELECT c.*, u.nom as agent_nom, u.prenom as agent_prenom 
-                FROM clients c 
-                LEFT JOIN users u ON c.agent_id = u.id 
-                ORDER BY c.date_creation DESC 
-                LIMIT ?";
+        $sql = "SELECT * FROM client ORDER BY id DESC LIMIT ?";
         return $this->db->fetchAll($sql, [$limit]);
     }
     
@@ -203,13 +184,13 @@ class Client {
      * @return array Matching clients
      */
     public function search(string $query, int $limit = 10): array {
-        $sql = "SELECT id, cin, nom, prenom, email 
-                FROM clients 
-                WHERE nom LIKE ? OR prenom LIKE ? OR cin LIKE ? 
-                ORDER BY nom, prenom 
+        $sql = "SELECT id, cin, nom 
+                FROM client 
+                WHERE nom LIKE ? OR cin LIKE ? 
+                ORDER BY nom 
                 LIMIT ?";
         $search = '%' . $query . '%';
-        return $this->db->fetchAll($sql, [$search, $search, $search, $limit]);
+        return $this->db->fetchAll($sql, [$search, $search, $limit]);
     }
     
     /**
@@ -219,12 +200,12 @@ class Client {
      * @return array Credit requests
      */
     public function getCreditRequests(int $clientId): array {
-        $sql = "SELECT cr.*, s.score_total, d.decision 
-                FROM credit_requests cr 
-                LEFT JOIN scores s ON cr.id = s.credit_request_id 
-                LEFT JOIN decisions d ON cr.id = d.credit_request_id 
-                WHERE cr.client_id = ? 
-                ORDER BY cr.date_demande DESC";
+        $sql = "SELECT dc.*, s.valeur_totale, d.resultat 
+                FROM demande_credit dc 
+                LEFT JOIN score s ON dc.id = s.demande_id 
+                LEFT JOIN decision d ON s.id = d.score_id 
+                WHERE dc.client_id = ? 
+                ORDER BY dc.date_creation DESC";
         return $this->db->fetchAll($sql, [$clientId]);
     }
     
@@ -238,12 +219,12 @@ class Client {
     public function calculateDebtRatio(int $clientId, float $newMonthlyPayment = 0): float {
         $client = $this->findById($clientId);
         
-        if (!$client || $client['revenu_mensuel'] <= 0) {
+        if (!$client || $client['revenu_mensuel_net'] <= 0) {
             return 100;
         }
         
         $totalCharges = $client['charges_mensuelles'] + $newMonthlyPayment;
-        return ($totalCharges / $client['revenu_mensuel']) * 100;
+        return ($totalCharges / $client['revenu_mensuel_net']) * 100;
     }
     
     /**
@@ -254,11 +235,9 @@ class Client {
     public static function getSituations(): array {
         return [
             'CDI' => 'CDI (Contrat à durée indéterminée)',
-            'CDD' => 'CDD (Contrat à durée déterminée)',
-            'Fonctionnaire' => 'Fonctionnaire',
-            'Independant' => 'Travailleur indépendant',
-            'Sans emploi' => 'Sans emploi',
-            'Retraite' => 'Retraité(e)',
+            'FONCTIONNAIRE' => 'Fonctionnaire',
+            'INDEPENDANT' => 'Travailleur indépendant',
+            'SANS_EMPLOI' => 'Sans emploi'
         ];
     }
     
@@ -269,9 +248,8 @@ class Client {
      */
     public static function getCreditHistoryOptions(): array {
         return [
-            'Aucun incident' => 'Aucun incident',
-            'Un incident' => 'Un incident',
-            'Plusieurs incidents' => 'Plusieurs incidents',
+            1 => 'Bon historique (Aucun incident)',
+            0 => 'Mauvais historique (Incidents)',
         ];
     }
 }

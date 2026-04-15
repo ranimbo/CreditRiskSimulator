@@ -92,7 +92,7 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
                                 <i data-feather="calculator" class="w-4 h-4"></i>
                                 Simulation
                             </a>
-                            <a href="historique.php" class="<?php echo $currentPage === 'historique' ? 'bg-primary-50 text-primary-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'; ?> px-4 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2">
+                            <a href="history.php" class="<?php echo $currentPage === 'history' ? 'bg-primary-50 text-primary-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'; ?> px-4 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2">
                                 <i data-feather="clock" class="w-4 h-4"></i>
                                 Historique
                             </a>
@@ -112,7 +112,7 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
                             <button type="button" onclick="toggleUserMenu()" class="flex items-center gap-3 text-sm focus:outline-none" id="user-menu-button">
                                 <div class="flex items-center gap-2">
                                     <div class="w-8 h-8 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center font-medium">
-                                        <?php echo strtoupper(substr($currentUser['prenom'], 0, 1) . substr($currentUser['nom'], 0, 1)); ?>
+                                        <?php echo strtoupper(substr($currentUser['nom'], 0, 2)); ?>
                                     </div>
                                     <div class="hidden md:block text-left">
                                         <p class="text-sm font-medium text-slate-900"><?php echo htmlspecialchars($currentUser['full_name']); ?></p>
@@ -156,7 +156,7 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
                     <a href="simulation.php" class="<?php echo $currentPage === 'simulation' ? 'bg-primary-50 text-primary-700' : 'text-slate-600'; ?> block px-3 py-2 rounded-lg text-base font-medium">
                         Simulation
                     </a>
-                    <a href="historique.php" class="<?php echo $currentPage === 'historique' ? 'bg-primary-50 text-primary-700' : 'text-slate-600'; ?> block px-3 py-2 rounded-lg text-base font-medium">
+                    <a href="history.php" class="<?php echo $currentPage === 'history' ? 'bg-primary-50 text-primary-700' : 'text-slate-600'; ?> block px-3 py-2 rounded-lg text-base font-medium">
                         Historique
                     </a>
                     <?php if (isAdmin()): ?>
