@@ -1,2 +1,0 @@
-"# CreditRiskSimulator"
-token github : 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
