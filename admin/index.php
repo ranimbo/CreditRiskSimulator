@@ -13,30 +13,27 @@ require_once '../classes/CreditRequest.php';
 
 $pageTitle = 'Administration';
 
-$user = new User();
-$client = new Client();
+$user          = new User();
+$client        = new Client();
 $creditRequest = new CreditRequest();
 
 // Get statistics
 $stats = [
-    'total_users' => $user->count(),
-    'total_clients' => $client->count(),
+    'total_users'       => $user->count(),
+    'total_clients'     => $client->count(),
     'total_simulations' => $creditRequest->count(),
-    'approved' => $creditRequest->countByDecision('approved'),
-    'rejected' => $creditRequest->countByDecision('rejected'),
-    'review' => $creditRequest->countByDecision('manual_review'),
+    'approved'          => $creditRequest->countByDecision('approved'),
+    'rejected'          => $creditRequest->countByDecision('rejected'),
+    'review'            => $creditRequest->countByDecision('manual_review'),
 ];
 
-// Calculate approval rate
-$stats['approval_rate'] = $stats['total_simulations'] > 0 
-    ? round(($stats['approved'] / $stats['total_simulations']) * 100, 1) 
+$stats['approval_rate'] = $stats['total_simulations'] > 0
+    ? round(($stats['approved'] / $stats['total_simulations']) * 100, 1)
     : 0;
 
-// Get recent simulations
+// Recent activity
 $recentSimulations = $creditRequest->getRecent(5);
-
-// Get recent users
-$recentUsers = $user->getRecent(5);
+$recentUsers       = $user->getRecent(5);
 
 require_once '../includes/header.php';
 ?>
@@ -133,41 +130,41 @@ require_once '../includes/header.php';
         </div>
     </div>
 
-    <!-- Decision Distribution -->
+    <!-- Decision Distribution + Quick Actions -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div class="card">
             <h3 class="text-lg font-semibold text-slate-900 mb-4">Distribution des Décisions</h3>
             <div class="space-y-4">
-                <!-- Approved -->
+                <?php
+                $total = $stats['total_simulations'];
+                $approvedPct = $total > 0 ? ($stats['approved'] / $total) * 100 : 0;
+                $reviewPct   = $total > 0 ? ($stats['review']   / $total) * 100 : 0;
+                $rejectedPct = $total > 0 ? ($stats['rejected'] / $total) * 100 : 0;
+                ?>
                 <div>
                     <div class="flex justify-between text-sm mb-1">
                         <span class="text-slate-600">Approuvés</span>
                         <span class="font-medium text-emerald-600"><?php echo $stats['approved']; ?></span>
                     </div>
                     <div class="w-full bg-slate-200 rounded-full h-3">
-                        <?php $approvedPct = $stats['total_simulations'] > 0 ? ($stats['approved'] / $stats['total_simulations']) * 100 : 0; ?>
                         <div class="bg-emerald-500 h-3 rounded-full" style="width: <?php echo $approvedPct; ?>%"></div>
                     </div>
                 </div>
-                <!-- Review -->
                 <div>
                     <div class="flex justify-between text-sm mb-1">
                         <span class="text-slate-600">En révision</span>
                         <span class="font-medium text-amber-600"><?php echo $stats['review']; ?></span>
                     </div>
                     <div class="w-full bg-slate-200 rounded-full h-3">
-                        <?php $reviewPct = $stats['total_simulations'] > 0 ? ($stats['review'] / $stats['total_simulations']) * 100 : 0; ?>
                         <div class="bg-amber-500 h-3 rounded-full" style="width: <?php echo $reviewPct; ?>%"></div>
                     </div>
                 </div>
-                <!-- Rejected -->
                 <div>
                     <div class="flex justify-between text-sm mb-1">
                         <span class="text-slate-600">Refusés</span>
                         <span class="font-medium text-red-600"><?php echo $stats['rejected']; ?></span>
                     </div>
                     <div class="w-full bg-slate-200 rounded-full h-3">
-                        <?php $rejectedPct = $stats['total_simulations'] > 0 ? ($stats['rejected'] / $stats['total_simulations']) * 100 : 0; ?>
                         <div class="bg-red-500 h-3 rounded-full" style="width: <?php echo $rejectedPct; ?>%"></div>
                     </div>
                 </div>
@@ -229,24 +226,28 @@ require_once '../includes/header.php';
                         </div>
                         <div>
                             <p class="font-medium text-slate-900"><?php echo htmlspecialchars($sim['client_name'] ?? 'Client'); ?></p>
-                            <p class="text-sm text-slate-500"><?php echo formatMoney($sim['amount']); ?></p>
+                            <p class="text-sm text-slate-500"><?php echo formatCurrency($sim['montant_demande']); ?></p>
                         </div>
                     </div>
                     <div class="text-right">
                         <?php
-                        $badgeClass = match($sim['decision']) {
-                            'approved' => 'badge-success',
-                            'rejected' => 'badge-danger',
-                            default => 'badge-warning'
+                        $badgeClass = match($sim['decision'] ?? '') {
+                            'ACCORDE'    => 'badge-accorde',
+                            'REFUSE'     => 'badge-refuse',
+                            'A_ANALYSER' => 'badge-analyser',
+                            default      => 'badge-attente',
                         };
-                        $badgeText = match($sim['decision']) {
-                            'approved' => 'Approuvé',
-                            'rejected' => 'Refusé',
-                            default => 'En révision'
+                        $badgeText = match($sim['decision'] ?? '') {
+                            'ACCORDE'    => 'Approuvé',
+                            'REFUSE'     => 'Refusé',
+                            'A_ANALYSER' => 'En révision',
+                            default      => 'En attente',
                         };
                         ?>
                         <span class="badge <?php echo $badgeClass; ?>"><?php echo $badgeText; ?></span>
-                        <p class="text-xs text-slate-500 mt-1"><?php echo formatDate($sim['created_at']); ?></p>
+                        <p class="text-xs text-slate-500 mt-1">
+                            <?php echo date('d/m/Y', strtotime($sim['date_creation'])); ?>
+                        </p>
                     </div>
                 </div>
                 <?php endforeach; ?>
@@ -269,19 +270,18 @@ require_once '../includes/header.php';
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                             <span class="text-sm font-medium text-blue-600">
-                                <?php echo strtoupper(substr($u['first_name'], 0, 1) . substr($u['last_name'], 0, 1)); ?>
+                                <?php echo strtoupper(substr($u['nom'], 0, 2)); ?>
                             </span>
                         </div>
                         <div>
-                            <p class="font-medium text-slate-900"><?php echo htmlspecialchars($u['first_name'] . ' ' . $u['last_name']); ?></p>
+                            <p class="font-medium text-slate-900"><?php echo htmlspecialchars($u['nom']); ?></p>
                             <p class="text-sm text-slate-500"><?php echo htmlspecialchars($u['email']); ?></p>
                         </div>
                     </div>
                     <div class="text-right">
-                        <span class="badge <?php echo $u['role'] === 'admin' ? 'badge-primary' : 'badge-secondary'; ?>">
-                            <?php echo $u['role'] === 'admin' ? 'Admin' : 'Agent'; ?>
+                        <span class="badge <?php echo $u['role_type'] === 'admin' ? 'badge-attente' : 'badge-analyser'; ?>">
+                            <?php echo $u['role_type'] === 'admin' ? 'Admin' : 'Agent'; ?>
                         </span>
-                        <p class="text-xs text-slate-500 mt-1"><?php echo formatDate($u['created_at']); ?></p>
                     </div>
                 </div>
                 <?php endforeach; ?>
